@@ -580,6 +580,301 @@ if (keys.length > 0) {{
 </body>
 </html>"""
 
+def generate_tomb_svg():
+    TILE = 24
+    X_OFF = 12
+    Y_OFF = 48
+    COLS = 9
+    ROWS = 13
+
+    def generate_tomb_maze():
+        grid = [[1 for _ in range(COLS)] for _ in range(ROWS)]
+        # Borda de paredes
+        for r in range(ROWS):
+            grid[r][0] = 0
+            grid[r][COLS-1] = 0
+        for c in range(COLS):
+            grid[0][c] = 0
+            grid[ROWS-1][c] = 0
+            
+        # Paredes internas aleatórias
+        rng = random.Random()
+        for r in range(2, ROWS - 2):
+            for c in range(1, COLS - 1):
+                if rng.random() < 0.28:
+                    grid[r][c] = 0
+                elif rng.random() < 0.04:
+                    grid[r][c] = 2
+
+        # Área de spawn livre
+        grid[1][4] = 1
+        grid[1][3] = 1
+        grid[1][5] = 1
+        grid[2][4] = 1
+        
+        # Linha de chegada livre
+        for c in range(1, COLS - 1):
+            grid[11][c] = 1
+            
+        return grid
+
+    def solve_maze(grid, start_x, start_y):
+        queue = [ (start_x, start_y, []) ]
+        visited = { (start_x, start_y) }
+        
+        while queue:
+            cx, cy, path = queue.pop(0)
+            if cy == ROWS - 2:
+                return path + [(cx, cy)]
+                
+            dirs = [(0, 1), (0, -1), (-1, 0), (1, 0)]
+            random.shuffle(dirs)
+            
+            for dx, dy in dirs:
+                tx, ty = cx, cy
+                steps = 0
+                hit_spike = False
+                while True:
+                    nx, ny = tx + dx, ty + dy
+                    if nx < 0 or nx >= COLS or ny < 0 or ny >= ROWS:
+                        break
+                    if grid[ny][nx] == 0:
+                        break
+                    tx, ty = nx, ny
+                    steps += 1
+                    if grid[ty][tx] == 2:
+                        hit_spike = True
+                        break
+                
+                if steps > 0 and not hit_spike:
+                    if (tx, ty) not in visited:
+                        visited.add((tx, ty))
+                        queue.append((tx, ty, path + [(cx, cy)]))
+        return None
+
+    attempts = 0
+    path = None
+    grid = None
+    while attempts < 2000:
+        attempts += 1
+        grid = generate_tomb_maze()
+        path = solve_maze(grid, 4, 1)
+        if path and 6 <= len(path) <= 12:
+            break
+            
+    if not path:
+        grid = generate_tomb_maze()
+        path = solve_maze(grid, 4, 1)
+        if not path:
+            path = [(4, 1), (4, 11)]
+            
+    v = 9.0
+    pause = 0.12
+    
+    timeline = []
+    px0, py0 = path[0]
+    timeline.append({"time": 0.0, "x": px0, "y": py0, "op": 1.0, "dx": 0, "dy": 0})
+    
+    dots_collected = {}
+    current_time = 0.0
+    
+    for i in range(len(path) - 1):
+        x1, y1 = path[i]
+        x2, y2 = path[i+1]
+        dx = x2 - x1
+        dy = y2 - y1
+        d = abs(dx) + abs(dy)
+        duration = d / v
+        
+        if x1 == x2:
+            step = 1 if y2 > y1 else -1
+            for cy in range(y1 + step, y2 + step, step):
+                dist = abs(cy - y1)
+                t_collect = current_time + (dist / v)
+                if (x1, cy) not in dots_collected:
+                    dots_collected[(x1, cy)] = t_collect
+        else:
+            step = 1 if x2 > x1 else -1
+            for cx in range(x1 + step, x2 + step, step):
+                dist = abs(cx - x1)
+                t_collect = current_time + (dist / v)
+                if (cx, y1) not in dots_collected:
+                    dots_collected[(cx, y1)] = t_collect
+                    
+        current_time += duration
+        timeline.append({"time": current_time, "x": x2, "y": y2, "op": 1.0, "dx": dx, "dy": dy})
+        
+        current_time += pause
+        timeline.append({"time": current_time, "x": x2, "y": y2, "op": 1.0, "dx": 0, "dy": 0})
+        
+    current_time += 0.4
+    timeline.append({"time": current_time, "x": path[-1][0], "y": path[-1][1], "op": 1.0, "dx": 0, "dy": 0})
+    current_time += 0.2
+    timeline.append({"time": current_time, "x": path[-1][0], "y": path[-1][1], "op": 0.0, "dx": 0, "dy": 0})
+    current_time += 0.1
+    timeline.append({"time": current_time, "x": path[-1][0], "y": path[-1][1], "op": 0.0, "dx": 0, "dy": 0})
+    current_time += 0.2
+    timeline.append({"time": current_time, "x": path[0][0], "y": path[0][1], "op": 1.0, "dx": 0, "dy": 0})
+    
+    total_time = current_time
+    
+    player_kf = []
+    x_px0 = X_OFF + px0 * TILE + TILE / 2
+    y_px0 = Y_OFF + (12 - py0) * TILE + TILE / 2
+    player_kf.append(f"    0.0% {{ transform: translate({x_px0}px, {y_px0}px) scale(1.0, 1.0); opacity: 1.0; }}")
+    
+    cur_t = 0.0
+    for i in range(len(path) - 1):
+        x1, y1 = path[i]
+        x2, y2 = path[i+1]
+        dx = x2 - x1
+        dy = y2 - y1
+        d = abs(dx) + abs(dy)
+        duration = d / v
+        
+        x_px1 = X_OFF + x1 * TILE + TILE / 2
+        y_px1 = Y_OFF + (12 - y1) * TILE + TILE / 2
+        pct_start = (cur_t / total_time) * 100.0
+        if pct_start > 0:
+            player_kf.append(f"    {pct_start:.2f}% {{ transform: translate({x_px1}px, {y_px1}px) scale(1.0, 1.0); opacity: 1.0; }}")
+            
+        x_px2 = X_OFF + x2 * TILE + TILE / 2
+        y_px2 = Y_OFF + (12 - y2) * TILE + TILE / 2
+        cur_t += duration
+        pct_end = (cur_t / total_time) * 100.0
+        player_kf.append(f"    {pct_end:.2f}% {{ transform: translate({x_px2}px, {y_px2}px) scale(1.0, 1.0); opacity: 1.0; }}")
+        
+        if dx != 0:
+            sq_x, sq_y = 0.8, 1.2
+            st_x, st_y = 1.1, 0.95
+        else:
+            sq_x, sq_y = 1.2, 0.8
+            st_x, st_y = 0.95, 1.1
+            
+        pct_sq = ((cur_t + 0.04) / total_time) * 100.0
+        player_kf.append(f"    {pct_sq:.2f}% {{ transform: translate({x_px2}px, {y_px2}px) scale({sq_x}, {sq_y}); opacity: 1.0; }}")
+        
+        pct_st = ((cur_t + 0.08) / total_time) * 100.0
+        player_kf.append(f"    {pct_st:.2f}% {{ transform: translate({x_px2}px, {y_px2}px) scale({st_x}, {st_y}); opacity: 1.0; }}")
+        
+        cur_t += pause
+        pct_next = (cur_t / total_time) * 100.0
+        player_kf.append(f"    {pct_next:.2f}% {{ transform: translate({x_px2}px, {y_px2}px) scale(1.0, 1.0); opacity: 1.0; }}")
+        
+    cur_t += 0.4
+    pct_wp = (cur_t / total_time) * 100.0
+    player_kf.append(f"    {pct_wp:.2f}% {{ transform: translate({x_px2}px, {y_px2}px) scale(1.0, 1.0); opacity: 1.0; }}")
+    
+    cur_t += 0.2
+    pct_fo = (cur_t / total_time) * 100.0
+    player_kf.append(f"    {pct_fo:.2f}% {{ transform: translate({x_px2}px, {y_px2}px) scale(0.1, 0.1); opacity: 0.0; }}")
+    
+    cur_t += 0.1
+    pct_wi = (cur_t / total_time) * 100.0
+    player_kf.append(f"    {pct_wi:.2f}% {{ transform: translate({x_px0}px, {y_px0}px) scale(0.1, 0.1); opacity: 0.0; }}")
+    
+    cur_t += 0.2
+    pct_fi = (cur_t / total_time) * 100.0
+    player_kf.append(f"    {pct_fi:.2f}% {{ transform: translate({x_px0}px, {y_px0}px) scale(1.0, 1.0); opacity: 1.0; }}")
+    
+    dot_styles = []
+    dot_anims = []
+    for (dc, dr), t_c in dots_collected.items():
+        pct = (t_c / total_time) * 100.0
+        name = f"dot-anim-{dc}-{dr}"
+        dot_anims.append(f"    @keyframes {name} {{")
+        dot_anims.append(f"      0% {{ transform: scale(1); opacity: 1; }}")
+        dot_anims.append(f"      {pct:.2f}% {{ transform: scale(1); opacity: 1; }}")
+        dot_anims.append(f"      {pct+1.5:.2f}% {{ transform: scale(0); opacity: 0; }}")
+        dot_anims.append(f"      100% {{ transform: scale(0); opacity: 0; }}")
+        dot_anims.append(f"    }}")
+        
+        cx = X_OFF + dc * TILE + TILE / 2
+        cy = Y_OFF + (12 - dr) * TILE + TILE / 2
+        dot_styles.append(f"    #dot-{dc}-{dr} {{ animation: {name} {total_time:.2f}s infinite linear; transform-origin: {cx}px {cy}px; }}")
+
+    svg = []
+    svg.append('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="380" viewBox="0 0 240 380">')
+    svg.append('  <defs>')
+    svg.append('    <linearGradient id="wallGrad" x1="0" y1="0" x2="1" y2="1">')
+    svg.append('      <stop offset="0%" stop-color="#2d0b5a"/>')
+    svg.append('      <stop offset="100%" stop-color="#0e021a"/>')
+    svg.append('    </linearGradient>')
+    svg.append('    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">')
+    svg.append('      <feGaussianBlur stdDeviation="2" result="blur"/>')
+    svg.append('      <feMerge>')
+    svg.append('        <feMergeNode in="blur"/>')
+    svg.append('        <feMergeNode in="SourceGraphic"/>')
+    svg.append('      </feMerge>')
+    svg.append('    </filter>')
+    svg.append('  </defs>')
+    
+    svg.append('  <style>')
+    svg.append('    @keyframes pulse {')
+    svg.append('      0% { opacity: 0.6; }')
+    svg.append('      50% { opacity: 1.0; }')
+    svg.append('      100% { opacity: 0.6; }')
+    svg.append('    }')
+    svg.append('    .pulse-text { animation: pulse 2s infinite ease-in-out; }')
+    
+    svg.append('    @keyframes player-move {')
+    svg.extend(player_kf)
+    svg.append('    }')
+    svg.append(f'    #player {{ animation: player-move {total_time:.2f}s infinite linear; }}')
+    
+    svg.extend(dot_styles)
+    svg.extend(dot_anims)
+    svg.append('  </style>')
+    
+    svg.append('  <rect width="240" height="380" fill="#08020d" rx="8" stroke="#7b2cbf" stroke-width="2"/>')
+    svg.append('  <rect x="2" y="2" width="236" height="44" fill="#140526" rx="6"/>')
+    svg.append('  <text x="120" y="24" text-anchor="middle" font-size="12" fill="#ffb703" font-family="monospace" font-weight="bold">🛡️ TOMB OF THE MASK</text>')
+    svg.append('  <text x="120" y="38" text-anchor="middle" font-size="8" fill="#00f5d4" font-family="monospace" font-weight="bold" class="pulse-text">🤖 AUTOPLAY BOT</text>')
+    
+    svg.append('  <rect x="12" y="48" width="216" height="312" fill="#0c0314" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
+    
+    svg.append('  <g stroke="#1b0e36" stroke-width="0.5" stroke-dasharray="1,5">')
+    for c in range(1, COLS - 1):
+        x = X_OFF + c * TILE
+        svg.append(f'    <line x1="{x}" y1="48" x2="{x}" y2="360"/>')
+    for r in range(1, ROWS - 1):
+        y = Y_OFF + r * TILE
+        svg.append(f'    <line x1="12" y1="{y}" x2="228" y2="{y}"/>')
+    svg.append('  </g>')
+    
+    for r in range(ROWS):
+        for c in range(COLS):
+            x = X_OFF + c * TILE
+            y = Y_OFF + (12 - r) * TILE
+            val = grid[r][c]
+            
+            if val == 0:
+                svg.append(f'    <rect x="{x}" y="{y}" width="24" height="24" fill="url(#wallGrad)" stroke="#7b2cbf" stroke-width="0.5" rx="2"/>')
+                svg.append(f'    <rect x="{x+2}" y="{y+2}" width="20" height="20" fill="none" stroke="#210535" stroke-width="0.5"/>')
+            elif val == 1:
+                if (c, r) != (4, 1):
+                    svg.append(f'    <circle id="dot-{c}-{r}" cx="{x+12}" cy="{y+12}" r="3" fill="#ffb703"/>')
+            elif val == 2:
+                svg.append(f'    <g transform="translate({x}, {y})">')
+                svg.append('      <polygon points="2,22 22,22 12,4" fill="#e63946" stroke="#ffffff" stroke-width="0.5"/>')
+                svg.append('      <polygon points="6,22 18,22 12,10" fill="#ff7096"/>')
+                svg.append('    </g>')
+                
+    svg.append('  <g id="player" filter="url(#glow)">')
+    svg.append('    <rect x="-10" y="-10" width="20" height="20" rx="4" fill="#ffb703"/>')
+    svg.append('    <path d="M-10,-10 L-14,-14 L-6,-10 Z" fill="#ffb703"/>')
+    svg.append('    <path d="M10,-10 L14,-14 L6,-10 Z" fill="#ffb703"/>')
+    svg.append('    <rect x="-6" y="-4" width="4" height="6" fill="#08020d"/>')
+    svg.append('    <rect x="2" y="-4" width="4" height="6" fill="#08020d"/>')
+    svg.append('    <rect x="-5" y="-2" width="2" height="2" fill="#ffffff"/>')
+    svg.append('    <rect x="3" y="-2" width="2" height="2" fill="#ffffff"/>')
+    svg.append('  </g>')
+    
+    svg.append('  <text x="120" y="372" text-anchor="middle" font-size="7" fill="#64748b" font-family="monospace">⚡ ALIVE - PROCEDURAL MAZE</text>')
+    svg.append('</svg>')
+    
+    return "\n".join(svg)
+
 def main():
     today = datetime.date.today()
     output = "dist"
@@ -601,6 +896,9 @@ def main():
     cur = f"{today.year}-{today.month:02d}"
     with open(f"{output}/skyline_v3.svg", "w", encoding="utf-8") as f:
         f.write(generate_svg(today.year, today.month, all_data.get(cur, {})))
+        
+    with open(f"{output}/tomb_v1.svg", "w", encoding="utf-8") as f:
+        f.write(generate_tomb_svg())
         
     with open(f"{output}/index.html", "w", encoding="utf-8") as f:
         f.write(generate_html(all_data))
