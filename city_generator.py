@@ -72,7 +72,8 @@ def building_height(commits):
     if commits <= 3: return 60
     if commits <= 6: return 110
     if commits <= 10: return 160
-    return 210
+    if commits <= 15: return 210
+    return 310
 
 def draw_sky(o, svg_w):
     o.append(f'<defs>'
@@ -253,6 +254,10 @@ def generate_svg(year, month, counts):
         is_future = cur > today
         day_seed = (year * 100 + month) * 100 + d
         
+        # Início do grupo com tooltip de hover
+        o.append(f'<g>')
+        o.append(f'<title>Dia {d}: {commits} {"commit" if commits == 1 else "commits"}</title>')
+        
         # Linha de grade para alinhamento dos dias
         o.append(f'<line x1="{x + LOT_W//2}" y1="50" x2="{x + LOT_W//2}" y2="{GROUND_Y}" stroke="#334155" stroke-width="0.5" stroke-dasharray="2,4"/>')
         
@@ -266,10 +271,14 @@ def generate_svg(year, month, counts):
             draw_park(o, x)
         else:
             draw_detailed_building(o, x, commits, day_seed)
-            # Emblema de commits flutuante
+            # Emblema de commits e dia flutuante
             h = building_height(commits)
-            o.append(f'<rect x="{x + LOT_W//2 - 7}" y="{GROUND_Y - h - 16}" width="14" height="10" fill="#f59e0b" rx="2"/>')
-            o.append(f'<text x="{x + LOT_W//2}" y="{GROUND_Y - h - 8}" text-anchor="middle" font-size="8" fill="#0f172a" font-weight="bold" font-family="{FONT}">{commits}</text>')
+            b_width = 22
+            b_height = 18
+            by = 42 if h >= 310 else (GROUND_Y - h - b_height - 6)
+            o.append(f'<rect x="{x + LOT_W//2 - b_width//2}" y="{by}" width="{b_width}" height="{b_height}" fill="#f59e0b" rx="2"/>')
+            o.append(f'<text x="{x + LOT_W//2}" y="{by + 8}" text-anchor="middle" font-size="7" fill="#0f172a" font-weight="bold" font-family="{FONT}">D{d}</text>')
+            o.append(f'<text x="{x + LOT_W//2}" y="{by + 15}" text-anchor="middle" font-size="7" fill="#0f172a" font-weight="bold" font-family="{FONT}">{commits}</text>')
         
         # Etiquetas dos Dias
         lbl_color = "#f59e0b" if is_today else "#94a3b8"
@@ -279,6 +288,8 @@ def generate_svg(year, month, counts):
         if is_today:
             # Apontador de destaque para o dia de hoje
             o.append(f'<polygon points="{x+LOT_W//2-4},{GROUND_Y+25} {x+LOT_W//2+4},{GROUND_Y+25} {x+LOT_W//2},{GROUND_Y+30}" fill="#f59e0b"/>')
+
+        o.append(f'</g>')
 
     draw_street(o, svg_w)
     
@@ -390,6 +401,10 @@ function render(yr, mo, counts) {{
         const isFuture = curDate > tdToday;
         const daySeed = (yr * 100 + mo) * 100 + d;
         
+        // Início do grupo com tooltip de hover
+        svg += `<g>`;
+        svg += `<title>Dia ${{d}}: ${{commits}} ${{commits === 1 ? 'commit' : 'commits'}}</title>`;
+        
         // Linha de Alinhamento
         svg += `<line x1="${{x + LOT_W/2}}" y1="50" x2="${{x + LOT_W/2}}" y2="${{GROUND_Y}}" stroke="#334155" stroke-width="0.5" stroke-dasharray="2,4"/>`;
         
@@ -418,7 +433,7 @@ function render(yr, mo, counts) {{
             svg += `<circle cx="${{x+15}}" cy="${{GROUND_Y-22}}" r="5" fill="#22c55e"/>`;
         }} else {{
             // Prédio
-            let h = commits <= 3 ? 60 : commits <= 6 ? 110 : commits <= 10 ? 160 : 210;
+            let h = commits <= 3 ? 60 : commits <= 6 ? 110 : commits <= 10 ? 160 : commits <= 15 ? 210 : 310;
             const yPos = GROUND_Y - h;
             const style = daySeed % 4;
             const palettes = [
@@ -499,9 +514,12 @@ function render(yr, mo, counts) {{
                 svg += `<path d="M ${{x+2}} ${{yPos}} A ${{LOT_W/2-2}} ${{LOT_W/2-2}} 0 0 1 ${{x+LOT_W-2}} ${{yPos}} Z" fill="${{colors[1]}}"/>`;
             }}
             
-            // Emblema de commits
-            svg += `<rect x="${{x+LOT_W/2-7}}" y="${{yPos-16}}" width="14" height="10" fill="#f59e0b" rx="2"/>`;
-            svg += `<text x="${{x+LOT_W/2}}" y="${{yPos-8}}" text-anchor="middle" font-size="8" fill="#0f172a" font-weight="bold" font-family="monospace">${{commits}}</text>`;
+            // Emblema de commits e dia flutuante
+            const bWidth = 22, bHeight = 18;
+            const by = h >= 310 ? 42 : yPos - bHeight - 6;
+            svg += `<rect x="${{x + LOT_W/2 - bWidth/2}}" y="${{by}}" width="${{bWidth}}" height="${{bHeight}}" fill="#f59e0b" rx="2"/>`;
+            svg += `<text x="${{x + LOT_W/2}}" y="${{by + 8}}" text-anchor="middle" font-size="7" fill="#0f172a" font-weight="bold" font-family="monospace">D${{d}}</text>`;
+            svg += `<text x="${{x + LOT_W/2}}" y="${{by + 15}}" text-anchor="middle" font-size="7" fill="#0f172a" font-weight="bold" font-family="monospace">${{commits}}</text>`;
         }}
         
         // Etiqueta do Dia
@@ -512,6 +530,8 @@ function render(yr, mo, counts) {{
         if (isToday) {{
             svg += `<polygon points="${{x+LOT_W/2-4}},${{GROUND_Y+25}} ${{x+LOT_W/2+4}},${{GROUND_Y+25}} ${{x+LOT_W/2}},${{GROUND_Y+30}}" fill="#f59e0b"/>`;
         }}
+        
+        svg += `</g>`;
     }}
     
     // Calçada e Rua
