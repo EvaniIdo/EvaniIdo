@@ -245,6 +245,8 @@ def generate_svg(year, month, counts):
     # Título
     o.append(f'<text x="{svg_w//2}" y="32" text-anchor="middle" font-size="16" fill="#f8fafc" font-family="{FONT}" font-weight="bold">&#x1F3D9;&#xFE0F; GitHub City Skyline — {mname}</text>')
     
+    draw_street(o, svg_w)
+    
     for d in range(1, last_day + 1):
         x = ML + (d - 1) * (LOT_W + GAP)
         commits = counts.get(d, 0)
@@ -290,8 +292,6 @@ def generate_svg(year, month, counts):
             o.append(f'<polygon points="{x+LOT_W//2-4},{GROUND_Y+25} {x+LOT_W//2+4},{GROUND_Y+25} {x+LOT_W//2},{GROUND_Y+30}" fill="#f59e0b"/>')
 
         o.append(f'</g>')
-
-    draw_street(o, svg_w)
     
     # Legenda
     ly = H - 16
@@ -391,6 +391,11 @@ function render(yr, mo, counts) {{
     
     // Título
     svg += `<text x="${{svgW/2}}" y="32" text-anchor="middle" font-size="16" fill="#f8fafc" font-family="monospace" font-weight="bold">&#x1F3D9;&#xFE0F; GitHub City Skyline — ${{mname}}</text>`;
+    
+    // Calçada e Rua
+    svg += `<rect x="0" y="${{GROUND_Y}}" width="${{svgW}}" height="8" fill="#475569"/>`;
+    svg += `<rect x="0" y="${{GROUND_Y+8}}" width="${{svgW}}" height="28" fill="#1e293b"/>`;
+    svg += `<line x1="0" y1="${{GROUND_Y+22}}" x2="${{svgW}}" y2="${{GROUND_Y+22}}" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="12,12"/>`;
     
     for (let d = 1; d <= lastDay; d++) {{
         const x = ML + (d - 1) * (LOT_W + GAP);
@@ -533,11 +538,7 @@ function render(yr, mo, counts) {{
         
         svg += `</g>`;
     }}
-    
-    // Calçada e Rua
-    svg += `<rect x="0" y="${{GROUND_Y}}" width="${{svgW}}" height="8" fill="#475569"/>`;
-    svg += `<rect x="0" y="${{GROUND_Y+8}}" width="${{svgW}}" height="28" fill="#1e293b"/>`;
-    svg += `<line x1="0" y1="${{GROUND_Y+22}}" x2="${{svgW}}" y2="${{GROUND_Y+22}}" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="12,12"/>`;
+
     
     // Legenda
     const ly = H - 16;
@@ -600,7 +601,7 @@ def main():
         json.dump(all_data, f)
         
     cur = f"{today.year}-{today.month:02d}"
-    with open(f"{output}/skyline.svg", "w", encoding="utf-8") as f:
+    with open(f"{output}/skyline_v2.svg", "w", encoding="utf-8") as f:
         f.write(generate_svg(today.year, today.month, all_data.get(cur, {})))
         
     with open(f"{output}/index.html", "w", encoding="utf-8") as f:

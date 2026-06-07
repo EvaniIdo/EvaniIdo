@@ -68,7 +68,7 @@
 
 <div align="center">
   <a href="https://evaniido.github.io/EvaniIdo/" title="Ver cidade interativa com seletor de mês">
-    <img src="https://raw.githubusercontent.com/EvaniIdo/EvaniIdo/stats/skyline.svg" alt="GitHub City — commits do mês atual" width="100%" />
+    <img src="https://raw.githubusercontent.com/EvaniIdo/EvaniIdo/stats/skyline_v2.svg" alt="GitHub City — commits do mês atual" width="100%" />
   </a>
   <br><br>
   <a href="https://evaniido.github.io/EvaniIdo/">
