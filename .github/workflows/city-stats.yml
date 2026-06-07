@@ -26,10 +26,19 @@ jobs:
           GITHUB_USER: EvaniIdo
         run: python city_generator.py
 
-      - name: Deploy to output branch
+      - name: Deploy interactive page to output branch
         uses: crazy-max/ghaction-github-pages@v3.1.0
         with:
           target_branch: output
+          build_dir: dist
+          keep_history: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy SVG to stats branch
+        uses: crazy-max/ghaction-github-pages@v3.1.0
+        with:
+          target_branch: stats
           build_dir: dist
           keep_history: false
         env:
