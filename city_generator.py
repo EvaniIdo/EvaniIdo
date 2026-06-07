@@ -585,47 +585,36 @@ def generate_tomb_svg():
     X_OFF = 12
     Y_OFF = 48
     COLS = 9
-    ROWS = 32
+    CHUNK_H = 15
 
-    def generate_tomb_maze(wall_chance=0.22):
-        grid = [[1 for _ in range(COLS)] for _ in range(ROWS)]
-        # Paredes laterais (bordas)
-        for r in range(ROWS):
+    def generate_chunk_grid(start_row, end_row, wall_chance=0.22):
+        h = end_row - start_row + 1
+        grid = [[1 for _ in range(COLS)] for _ in range(h)]
+        for r in range(h):
             grid[r][0] = 0
             grid[r][COLS-1] = 0
-        # Parede inferior de segurança
-        for c in range(COLS):
-            grid[0][c] = 0
-            grid[1][c] = 0
             
         rng = random.Random()
-        for r in range(2, ROWS):
+        for r in range(h):
+            if r == 0 or r == h - 1:
+                continue
             for c in range(1, COLS - 1):
                 if rng.random() < wall_chance:
                     grid[r][c] = 0
                 elif rng.random() < 0.03:
                     grid[r][c] = 2
+                    
+        grid[0][4] = 1
+        grid[h-1][4] = 1
+        return grid
 
-        # Área de início e fim da transição limpa de obstáculos
-        grid[2][4] = 1
-        grid[3][4] = 1
-        grid[31][4] = 1
-        grid[30][4] = 1
-        
-        # Estende a grade para 45 linhas (duplica as 13 primeiras linhas úteis no topo para o scroll infinito)
-        full_grid = [row[:] for row in grid]
-        for r in range(2, 15):
-            full_grid.append(grid[r][:])
-            
-        return full_grid
-
-    def solve_maze(grid, start_x, start_y):
+    def solve_chunk(grid, start_row, start_x, start_y, end_x, end_y):
         queue = [ (start_x, start_y, []) ]
         visited = { (start_x, start_y) }
         
         while queue:
             cx, cy, path = queue.pop(0)
-            if cy == 32 and cx == 4:
+            if cy == end_y and cx == end_x:
                 return path + [(cx, cy)]
                 
             dirs = [(0, 1), (0, -1), (-1, 0), (1, 0)]
@@ -637,39 +626,68 @@ def generate_tomb_svg():
                 hit_spike = False
                 while True:
                     nx, ny = tx + dx, ty + dy
-                    if nx < 0 or nx >= COLS or ny < 0 or ny >= len(grid):
+                    if nx < 0 or nx >= COLS or ny < start_y or ny > end_y:
                         break
-                    if grid[ny][nx] == 0:
+                    local_ny = ny - start_row
+                    if grid[local_ny][nx] == 0:
                         break
                     tx, ty = nx, ny
                     steps += 1
-                    if grid[ty][tx] == 2:
+                    if grid[local_ny][nx] == 2:
                         hit_spike = True
                         break
                 
                 if steps > 0 and not hit_spike:
-                    if ty <= 32:
-                        if (tx, ty) not in visited:
-                            visited.add((tx, ty))
-                            queue.append((tx, ty, path + [(cx, cy)]))
+                    if (tx, ty) not in visited:
+                        visited.add((tx, ty))
+                        queue.append((tx, ty, path + [(cx, cy)]))
         return None
 
+    # Geramos 3 chunks e concatenamos as grades e caminhos
+    grid = [[0]*COLS, [0]*COLS]
+    path = []
+    
+    # Chunk 0: linhas 2 a 17
     attempts = 0
-    path = None
-    grid = None
     while attempts < 2000:
         attempts += 1
-        grid = generate_tomb_maze(0.22)
-        path = solve_maze(grid, 4, 2)
-        if path and 10 <= len(path) <= 22:
+        c0 = generate_chunk_grid(2, 17, 0.22)
+        p0 = solve_chunk(c0, 2, 4, 2, 4, 17)
+        if p0 and 5 <= len(p0) <= 12:
+            grid.extend(c0)
+            path.extend(p0[:-1])
             break
             
-    if not path:
-        grid = generate_tomb_maze(0.20)
-        path = solve_maze(grid, 4, 2)
-        if not path:
-            path = [(4, 2), (4, 32)]
+    # Chunk 1: linhas 17 a 32
+    attempts = 0
+    while attempts < 2000:
+        attempts += 1
+        c1 = generate_chunk_grid(17, 32, 0.22)
+        p1 = solve_chunk(c1, 17, 4, 17, 4, 32)
+        if p1 and 5 <= len(p1) <= 12:
+            grid.extend(c1[1:])
+            path.extend(p1[:-1])
+            break
+            
+    # Chunk 2: linhas 32 a 47
+    attempts = 0
+    while attempts < 2000:
+        attempts += 1
+        c2 = generate_chunk_grid(32, 47, 0.22)
+        p2 = solve_chunk(c2, 32, 4, 32, 4, 47)
+        if p2 and 5 <= len(p2) <= 12:
+            grid.extend(c2[1:])
+            path.extend(p2)
+            break
 
+    if not path:
+        grid = [[0]*COLS for _ in range(48)]
+        path = [(4, 2), (4, 47)]
+
+    # Adiciona a cópia do início do mapa no topo para rolagem contínua (linhas 2 a 14 copiadas para 48 a 60)
+    for r in range(2, 15):
+        grid.append(grid[r][:])
+        
     v = 8.5
     pause = 0.12
     
@@ -712,7 +730,7 @@ def generate_tomb_svg():
         
     total_time = current_time
     
-    # Geração dos quadros-chave (keyframes) do jogador e do scroll container
+    # Quadros-chave (keyframes) do jogador e da câmera
     player_kf = []
     scroll_kf = []
     
@@ -731,7 +749,7 @@ def generate_tomb_svg():
         d = abs(dx) + abs(dy)
         duration = d / v
         
-        # Início do slide
+        # Início do movimento
         x_px1 = x1 * TILE + TILE / 2
         y_px1 = - y1 * TILE - TILE / 2
         ty1 = 168 + y1 * TILE
@@ -740,7 +758,7 @@ def generate_tomb_svg():
             player_kf.append(f"    {pct_start:.2f}% {{ transform: translate({x_px1}px, {y_px1}px) scale(1.0, 1.0); opacity: 1.0; }}")
             scroll_kf.append(f"    {pct_start:.2f}% {{ transform: translate(12px, {ty1}px); }}")
             
-        # Fim do slide
+        # Fim do movimento
         x_px2 = x2 * TILE + TILE / 2
         y_px2 = - y2 * TILE - TILE / 2
         ty2 = 168 + y2 * TILE
@@ -749,7 +767,7 @@ def generate_tomb_svg():
         player_kf.append(f"    {pct_end:.2f}% {{ transform: translate({x_px2}px, {y_px2}px) scale(1.0, 1.0); opacity: 1.0; }}")
         scroll_kf.append(f"    {pct_end:.2f}% {{ transform: translate(12px, {ty2}px); }}")
         
-        # Squash e Stretch no impacto
+        # Squash e Stretch no impacto contra a parede
         if dx != 0:
             sq_x, sq_y = 0.8, 1.2
             st_x, st_y = 1.1, 0.95
@@ -770,7 +788,7 @@ def generate_tomb_svg():
         player_kf.append(f"    {pct_next:.2f}% {{ transform: translate({x_px2}px, {y_px2}px) scale(1.0, 1.0); opacity: 1.0; }}")
         scroll_kf.append(f"    {pct_next:.2f}% {{ transform: translate(12px, {ty2}px); }}")
 
-    # Estilos e animações dos pontos (moedas)
+    # Animação dos pontos (moedas)
     dot_styles = []
     dot_anims = []
     for (dc, dr), t_c in dots_collected.items():
@@ -840,8 +858,8 @@ def generate_tomb_svg():
     svg.append('      <g stroke="#1b0e36" stroke-width="0.5" stroke-dasharray="1,5">')
     for c in range(1, COLS - 1):
         x = c * TILE
-        svg.append(f'        <line x1="{x}" y1="0" x2="{x}" y2="-1080"/>')
-    for r in range(45):
+        svg.append(f'        <line x1="{x}" y1="0" x2="{x}" y2="-1500"/>')
+    for r in range(len(grid)):
         y = - r * TILE
         svg.append(f'        <line x1="0" y1="{y}" x2="216" y2="{y}"/>')
     svg.append('      </g>')
@@ -856,8 +874,8 @@ def generate_tomb_svg():
                 svg.append(f'      <rect x="{x}" y="{y-TILE}" width="24" height="24" fill="url(#wallGrad)" stroke="#7b2cbf" stroke-width="0.5" rx="2"/>')
                 svg.append(f'      <rect x="{x+2}" y="{y-TILE+2}" width="20" height="20" fill="none" stroke="#210535" stroke-width="0.5"/>')
             elif val == 1:
-                if (c, r) != (4, 2) and (c, r) != (4, 32):
-                    dot_id = f' id="dot-{c}-{r}"' if r < 32 else ''
+                if (c, r) != (4, 2) and (c, r) != (4, 47):
+                    dot_id = f' id="dot-{c}-{r}"' if r < 47 else ''
                     svg.append(f'      <circle{dot_id} cx="{x+12}" cy="{y-12}" r="3" fill="#ffb703"/>')
             elif val == 2:
                 svg.append(f'      <g transform="translate({x}, {y-TILE})">')
