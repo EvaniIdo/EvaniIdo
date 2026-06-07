@@ -238,10 +238,10 @@ function draw(yr,mo,counts){{
   ctx.globalAlpha=1;
   ctx.fillStyle="#111827";ctx.fillRect(0,GY,W,H-GY);
   ctx.fillStyle="#374151";ctx.fillRect(0,GY,W,3);
-  const mn=["Janeiro","Fevereiro","Mar\u00e7o","Abril","Maio","Junho",
+  const mn=["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
              "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
   ctx.fillStyle="#e5e7eb";ctx.font="bold 13px monospace";ctx.textAlign="center";
-  ctx.fillText("\uD83D\uDCC5 "+mn[mo-1]+" "+yr,W/2,22);
+  ctx.fillText("\\uD83D\\uDCC5 "+mn[mo-1]+" "+yr,W/2,22);
   for(let d=1;d<=dim;d++){{
     const x=ML+(d-1)*(LOT+GAP),c=counts[d]||0;
     const td=new Date(yr,mo-1,d),tt=new Date(today.getFullYear(),today.getMonth(),today.getDate());
