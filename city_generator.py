@@ -273,14 +273,13 @@ def generate_svg(year, month, counts):
             draw_park(o, x)
         else:
             draw_detailed_building(o, x, commits, day_seed)
-            # Emblema de commits e dia flutuante
+            # Emblema de commits flutuante
             h = building_height(commits)
-            b_width = 22
-            b_height = 18
-            by = 42 if h >= 310 else (GROUND_Y - h - b_height - 6)
+            b_width = 14
+            b_height = 10
+            by = 42 if h >= 310 else (GROUND_Y - h - 16)
             o.append(f'<rect x="{x + LOT_W//2 - b_width//2}" y="{by}" width="{b_width}" height="{b_height}" fill="#f59e0b" rx="2"/>')
-            o.append(f'<text x="{x + LOT_W//2}" y="{by + 8}" text-anchor="middle" font-size="7" fill="#0f172a" font-weight="bold" font-family="{FONT}">D{d}</text>')
-            o.append(f'<text x="{x + LOT_W//2}" y="{by + 15}" text-anchor="middle" font-size="7" fill="#0f172a" font-weight="bold" font-family="{FONT}">{commits}</text>')
+            o.append(f'<text x="{x + LOT_W//2}" y="{by + 8}" text-anchor="middle" font-size="8" fill="#0f172a" font-weight="bold" font-family="{FONT}">{commits}</text>')
         
         # Etiquetas dos Dias
         lbl_color = "#f59e0b" if is_today else "#94a3b8"
@@ -519,12 +518,11 @@ function render(yr, mo, counts) {{
                 svg += `<path d="M ${{x+2}} ${{yPos}} A ${{LOT_W/2-2}} ${{LOT_W/2-2}} 0 0 1 ${{x+LOT_W-2}} ${{yPos}} Z" fill="${{colors[1]}}"/>`;
             }}
             
-            // Emblema de commits e dia flutuante
-            const bWidth = 22, bHeight = 18;
-            const by = h >= 310 ? 42 : yPos - bHeight - 6;
+            // Emblema de commits flutuante
+            const bWidth = 14, bHeight = 10;
+            const by = h >= 310 ? 42 : yPos - 16;
             svg += `<rect x="${{x + LOT_W/2 - bWidth/2}}" y="${{by}}" width="${{bWidth}}" height="${{bHeight}}" fill="#f59e0b" rx="2"/>`;
-            svg += `<text x="${{x + LOT_W/2}}" y="${{by + 8}}" text-anchor="middle" font-size="7" fill="#0f172a" font-weight="bold" font-family="monospace">D${{d}}</text>`;
-            svg += `<text x="${{x + LOT_W/2}}" y="${{by + 15}}" text-anchor="middle" font-size="7" fill="#0f172a" font-weight="bold" font-family="monospace">${{commits}}</text>`;
+            svg += `<text x="${{x + LOT_W/2}}" y="${{by + 8}}" text-anchor="middle" font-size="8" fill="#0f172a" font-weight="bold" font-family="monospace">${{commits}}</text>`;
         }}
         
         // Etiqueta do Dia
@@ -601,7 +599,7 @@ def main():
         json.dump(all_data, f)
         
     cur = f"{today.year}-{today.month:02d}"
-    with open(f"{output}/skyline_v2.svg", "w", encoding="utf-8") as f:
+    with open(f"{output}/skyline_v3.svg", "w", encoding="utf-8") as f:
         f.write(generate_svg(today.year, today.month, all_data.get(cur, {})))
         
     with open(f"{output}/index.html", "w", encoding="utf-8") as f:
