@@ -242,7 +242,7 @@ def generate_svg(year, month, counts):
     draw_sky(o, svg_w)
     
     # Título
-    o.append(f'<text x="{svg_w//2}" y="32" text-anchor="middle" font-size="16" fill="#f8fafc" font-family="{FONT}" font-weight="bold">&#x1F3D9;&#xFE0F; GitHub City Skyline &mdash; {mname}</text>')
+    o.append(f'<text x="{svg_w//2}" y="32" text-anchor="middle" font-size="16" fill="#f8fafc" font-family="{FONT}" font-weight="bold">&#x1F3D9;&#xFE0F; GitHub City Skyline — {mname}</text>')
     
     for d in range(1, last_day + 1):
         x = ML + (d - 1) * (LOT_W + GAP)
@@ -379,7 +379,7 @@ function render(yr, mo, counts) {{
     }}
     
     // Título
-    svg += `<text x="${{svgW/2}}" y="32" text-anchor="middle" font-size="16" fill="#f8fafc" font-family="monospace" font-weight="bold">&#x1F3D9;&#xFE0F; GitHub City Skyline &mdash; ${{mname}}</text>`;
+    svg += `<text x="${{svgW/2}}" y="32" text-anchor="middle" font-size="16" fill="#f8fafc" font-family="monospace" font-weight="bold">&#x1F3D9;&#xFE0F; GitHub City Skyline — ${{mname}}</text>`;
     
     for (let d = 1; d <= lastDay; d++) {{
         const x = ML + (d - 1) * (LOT_W + GAP);
