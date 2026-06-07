@@ -52,7 +52,7 @@ def commits_by_day(year, month):
                 pass
     return counts
 
-# ── 2D Skyline SVG Generator ──
+# ── Gerador de SVG do Skyline 2D ──
 
 W, GROUND_Y, H = 980, 290, 360
 LOT_W, GAP, ML = 26, 4, 20
@@ -83,7 +83,7 @@ def draw_sky(o, svg_w):
              f'</linearGradient>'
              f'</defs>')
     o.append(f'<rect width="{svg_w}" height="{H}" fill="url(#skyGrad)"/>')
-    # stars
+    # estrelas
     rng = random.Random(42)
     for _ in range(90):
         sx, sy = rng.randint(0, svg_w), rng.randint(0, GROUND_Y - 20)
@@ -91,36 +91,37 @@ def draw_sky(o, svg_w):
         o.append(f'<circle cx="{sx}" cy="{sy}" r="{r}" fill="#ffffff" opacity="{op}"/>')
 
 def draw_street(o, svg_w):
-    # sidewalk
+    # calçada
     o.append(f'<rect x="0" y="{GROUND_Y}" width="{svg_w}" height="8" fill="#475569"/>')
-    # road
+    # rua
     o.append(f'<rect x="0" y="{GROUND_Y+8}" width="{svg_w}" height="28" fill="#1e293b"/>')
-    # road lines
+    # faixas da rua
     o.append(f'<line x1="0" y1="{GROUND_Y+22}" x2="{svg_w}" y2="{GROUND_Y+22}" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="12,12"/>')
 
 def draw_park(o, x):
-    # grass
+    # grama
     o.append(f'<rect x="{x}" y="{GROUND_Y-6}" width="{LOT_W}" height="6" fill="#15803d" rx="1"/>')
-    # bench
+    # banco
     bx = x + 3
     o.append(f'<rect x="{bx}" y="{GROUND_Y-9}" width="6" height="3" fill="#b45309"/>')
     o.append(f'<line x1="{bx}" y1="{GROUND_Y-9}" x2="{bx}" y2="{GROUND_Y-6}" stroke="#78350f" stroke-width="1"/>')
     o.append(f'<line x1="{bx+6}" y1="{GROUND_Y-9}" x2="{bx+6}" y2="{GROUND_Y-6}" stroke="#78350f" stroke-width="1"/>')
-    # tree
+    # árvore
     tx = x + 18
     o.append(f'<rect x="{tx-1}" y="{GROUND_Y-16}" width="2" height="10" fill="#78350f"/>')
     o.append(f'<circle cx="{tx}" cy="{GROUND_Y-19}" r="7" fill="#16a34a"/>')
     o.append(f'<circle cx="{tx-3}" cy="{GROUND_Y-22}" r="5" fill="#22c55e"/>')
 
 def draw_construction(o, x):
-    # scaffold/cranes for future days
+    # andaimes/guindastes para dias futuros
     o.append(f'<rect x="{x}" y="{GROUND_Y-40}" width="{LOT_W}" height="40" fill="none" stroke="#475569" stroke-width="1" stroke-dasharray="3,3" rx="1"/>')
-    # crane arm
+    # braço do guindaste
     mx = x + LOT_W // 2
     o.append(f'<line x1="{mx}" y1="{GROUND_Y-40}" x2="{mx}" y2="{GROUND_Y-52}" stroke="#64748b" stroke-width="1.5"/>')
     o.append(f'<line x1="{mx}" y1="{GROUND_Y-52}" x2="{mx+10}" y2="{GROUND_Y-52}" stroke="#64748b" stroke-width="1.5"/>')
 
 def draw_road_lamp(o, x):
+    # poste de luz
     lx = x + LOT_W // 2
     o.append(f'<line x1="{lx}" y1="{GROUND_Y}" x2="{lx}" y2="{GROUND_Y-24}" stroke="#64748b" stroke-width="1.5"/>')
     o.append(f'<path d="M {lx} {GROUND_Y-24} Q {lx+5} {GROUND_Y-26} {lx+8} {GROUND_Y-22}" fill="none" stroke="#64748b" stroke-width="1.5"/>')
@@ -131,19 +132,19 @@ def draw_detailed_building(o, x, commits, day_seed):
     y = GROUND_Y - h
     w = LOT_W
     
-    # 4 distinct architectural styles based on day seed
+    # 4 estilos arquitetônicos distintos com base na seed do dia
     style = day_seed % 4
     
-    # Base color palettes
+    # Paletas de cores base
     palettes = [
-        ["#3b82f6", "#2563eb", "#1d4ed8"],  # Modern Glass Blue
-        ["#b45309", "#92400e", "#78350f"],  # Classic Brick Orange
-        ["#8b5cf6", "#7c3aed", "#6d28d9"],  # High-tech Purple
-        ["#0d9488", "#0f766e", "#115e59"]   # Sleek Teal
+        ["#3b82f6", "#2563eb", "#1d4ed8"],  # Vidro Moderno Azul
+        ["#b45309", "#92400e", "#78350f"],  # Tijolo Clássico Laranja
+        ["#8b5cf6", "#7c3aed", "#6d28d9"],  # Alta Tecnologia Roxo
+        ["#0d9488", "#0f766e", "#115e59"]   # Elegante Verde Água
     ]
     colors = palettes[style]
     
-    # Main building body with a vertical gradient look
+    # Corpo principal do prédio com gradiente vertical
     o.append(f'<defs>'
              f'<linearGradient id="grad_{day_seed}" x1="0" y1="0" x2="0" y2="1">'
              f'<stop offset="0%" stop-color="{colors[0]}"/>'
@@ -153,19 +154,19 @@ def draw_detailed_building(o, x, commits, day_seed):
     
     o.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="url(#grad_{day_seed})" rx="1"/>')
     
-    # 3D side shadow
+    # Sombra lateral 3D
     o.append(f'<rect x="{x+w-4}" y="{y}" width="4" height="{h}" fill="#000000" opacity="0.2"/>')
     
-    # Doors
+    # Portas
     o.append(f'<rect x="{x+w//2-3}" y="{GROUND_Y-8}" width="6" height="8" fill="#1e293b"/>')
     o.append(f'<rect x="{x+w//2-2}" y="{GROUND_Y-7}" width="2" height="7" fill="#fef08a" opacity="0.8"/>')
     
-    # Windows
+    # Janelas
     win_color = "#fef08a"
     rng = random.Random(day_seed + 100)
     
     if style == 0:
-        # Style 0: Glass facade with vertical lines
+        # Estilo 0: Fachada de vidro com linhas verticais
         cols = 3
         rows = max(1, (h - 15) // 10)
         ww, wh = 4, 6
@@ -175,12 +176,12 @@ def draw_detailed_building(o, x, commits, day_seed):
                     wx = x + 3 + c * 7
                     wy = y + 8 + r * 9
                     o.append(f'<rect x="{wx}" y="{wy}" width="{ww}" height="{wh}" fill="{win_color}" opacity="0.9"/>')
-        # spire
+        # antena/espira
         o.append(f'<line x1="{x+w//2}" y1="{y}" x2="{x+w//2}" y2="{y-15}" stroke="#94a3b8" stroke-width="1.5"/>')
         o.append(f'<circle cx="{x+w//2}" cy="{y-15}" r="2" fill="#ef4444"/>')
         
     elif style == 1:
-        # Style 1: Brick structure with arched windows
+        # Estilo 1: Estrutura de tijolos com janelas em arco
         cols = 2
         rows = max(1, (h - 15) // 12)
         ww, wh = 6, 8
@@ -189,13 +190,13 @@ def draw_detailed_building(o, x, commits, day_seed):
                 if rng.random() < 0.8:
                     wx = x + 4 + c * 11
                     wy = y + 8 + r * 11
-                    # arch
+                    # arco
                     o.append(f'<path d="M {wx} {wy+wh} L {wx} {wy+3} A {ww/2} {ww/2} 0 0 1 {wx+ww} {wy+3} L {wx+ww} {wy+wh} Z" fill="{win_color}" opacity="0.9"/>')
-        # Triangular roof
+        # Telhado triangular
         o.append(f'<polygon points="{x-2},{y} {x+w//2},{y-10} {x+w+2},{y}" fill="{colors[1]}" stroke="#1e293b" stroke-width="1"/>')
         
     elif style == 2:
-        # Style 2: High-tech grid panels
+        # Estilo 2: Painéis de grade de alta tecnologia
         cols = 2
         rows = max(1, (h - 15) // 14)
         ww, wh = 8, 10
@@ -206,13 +207,13 @@ def draw_detailed_building(o, x, commits, day_seed):
                     wy = y + 8 + r * 13
                     o.append(f'<rect x="{wx}" y="{wy}" width="{ww}" height="{wh}" fill="{win_color}" opacity="0.95"/>')
                     o.append(f'<line x1="{wx}" y1="{wy+wh//2}" x2="{wx+ww}" y2="{wy+wh//2}" stroke="{colors[2]}" stroke-width="0.5"/>')
-        # Rooftop water tower
+        # Caixa d'água no telhado
         o.append(f'<rect x="{x+4}" y="{y-8}" width="8" height="8" fill="#64748b" rx="1"/>')
         o.append(f'<line x1="{x+5}" y1="{y}" x2="{x+5}" y2="{y-8}" stroke="#475569" stroke-width="1"/>')
         o.append(f'<line x1="{x+11}" y1="{y}" x2="{x+11}" y2="{y-8}" stroke="#475569" stroke-width="1"/>')
         
     else:
-        # Style 3: Classic tower with balconies
+        # Estilo 3: Torre clássica com sacadas
         cols = 2
         rows = max(1, (h - 15) // 15)
         ww, wh = 6, 8
@@ -222,9 +223,9 @@ def draw_detailed_building(o, x, commits, day_seed):
                 wy = y + 8 + r * 14
                 if rng.random() < 0.8:
                     o.append(f'<rect x="{wx}" y="{wy}" width="{ww}" height="{wh}" fill="{win_color}" opacity="0.9"/>')
-                # balcony ledge
+                # borda da sacada
                 o.append(f'<rect x="{wx-1}" y="{wy+wh}" width="{ww+2}" height="2" fill="#cbd5e1"/>')
-        # Dome roof top
+        # Telhado em cúpula
         o.append(f'<path d="M {x+2} {y} A {w//2-2} {w//2-2} 0 0 1 {x+w-2} {y} Z" fill="{colors[1]}"/>')
 
 def generate_svg(year, month, counts):
@@ -240,7 +241,7 @@ def generate_svg(year, month, counts):
     
     draw_sky(o, svg_w)
     
-    # Title
+    # Título
     o.append(f'<text x="{svg_w//2}" y="32" text-anchor="middle" font-size="16" fill="#f8fafc" font-family="{FONT}" font-weight="bold">&#x1F3D9;&#xFE0F; GitHub City Skyline &mdash; {mname}</text>')
     
     for d in range(1, last_day + 1):
@@ -252,36 +253,36 @@ def generate_svg(year, month, counts):
         is_future = cur > today
         day_seed = (year * 100 + month) * 100 + d
         
-        # Grid line for day alignment
+        # Linha de grade para alinhamento dos dias
         o.append(f'<line x1="{x + LOT_W//2}" y1="50" x2="{x + LOT_W//2}" y2="{GROUND_Y}" stroke="#334155" stroke-width="0.5" stroke-dasharray="2,4"/>')
         
         if is_future:
             draw_construction(o, x)
         elif commits == 0:
-            # Maybe place a street lamp sometimes to add details
+            # Talvez colocar um poste de luz às vezes para adicionar detalhes
             if day_seed % 5 == 0:
                 draw_road_lamp(o, x)
         elif commits == 1:
             draw_park(o, x)
         else:
             draw_detailed_building(o, x, commits, day_seed)
-            # Floating commit badge
+            # Emblema de commits flutuante
             h = building_height(commits)
             o.append(f'<rect x="{x + LOT_W//2 - 7}" y="{GROUND_Y - h - 16}" width="14" height="10" fill="#f59e0b" rx="2"/>')
             o.append(f'<text x="{x + LOT_W//2}" y="{GROUND_Y - h - 8}" text-anchor="middle" font-size="8" fill="#0f172a" font-weight="bold" font-family="{FONT}">{commits}</text>')
         
-        # Day Labels
+        # Etiquetas dos Dias
         lbl_color = "#f59e0b" if is_today else "#94a3b8"
         font_w = "bold" if is_today else "normal"
         o.append(f'<text x="{x + LOT_W//2}" y="{GROUND_Y + 20}" text-anchor="middle" font-size="10" fill="{lbl_color}" font-weight="{font_w}" font-family="{FONT}">{d}</text>')
         
         if is_today:
-            # Highlight pointer for today
+            # Apontador de destaque para o dia de hoje
             o.append(f'<polygon points="{x+LOT_W//2-4},{GROUND_Y+25} {x+LOT_W//2+4},{GROUND_Y+25} {x+LOT_W//2},{GROUND_Y+30}" fill="#f59e0b"/>')
 
     draw_street(o, svg_w)
     
-    # Legend
+    # Legenda
     ly = H - 16
     items = [
         ("#1e293b", "0 commits"),
@@ -355,7 +356,7 @@ function render(yr, mo, counts) {{
     
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${{svgW}}" height="${{H}}" viewBox="0 0 ${{svgW}} ${{H}}">`;
     
-    // Sky
+    // Céu
     svg += `<defs>
       <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="#070b19"/>
@@ -365,7 +366,7 @@ function render(yr, mo, counts) {{
     </defs>`;
     svg += `<rect width="${{svgW}}" height="${{H}}" fill="url(#skyGrad)"/>`;
     
-    // Stars
+    // Estrelas
     let seed = 42;
     function rng() {{
         let x = Math.sin(seed++) * 10000;
@@ -377,7 +378,7 @@ function render(yr, mo, counts) {{
         svg += `<circle cx="${{sx}}" cy="${{sy}}" r="${{r}}" fill="#ffffff" opacity="${{op}}"/>`;
     }}
     
-    // Title
+    // Título
     svg += `<text x="${{svgW/2}}" y="32" text-anchor="middle" font-size="16" fill="#f8fafc" font-family="monospace" font-weight="bold">&#x1F3D9;&#xFE0F; GitHub City Skyline &mdash; ${{mname}}</text>`;
     
     for (let d = 1; d <= lastDay; d++) {{
@@ -389,17 +390,17 @@ function render(yr, mo, counts) {{
         const isFuture = curDate > tdToday;
         const daySeed = (yr * 100 + mo) * 100 + d;
         
-        // Alignment Line
+        // Linha de Alinhamento
         svg += `<line x1="${{x + LOT_W/2}}" y1="50" x2="${{x + LOT_W/2}}" y2="${{GROUND_Y}}" stroke="#334155" stroke-width="0.5" stroke-dasharray="2,4"/>`;
         
         if (isFuture) {{
-            // Construction scaffold
+            // Andaimes de construção
             svg += `<rect x="${{x}}" y="${{GROUND_Y-40}}" width="${{LOT_W}}" height="40" fill="none" stroke="#475569" stroke-width="1" stroke-dasharray="3,3" rx="1"/>`;
             const mx = x + LOT_W / 2;
             svg += `<line x1="${{mx}}" y1="${{GROUND_Y-40}}" x2="${{mx}}" y2="${{GROUND_Y-52}}" stroke="#64748b" stroke-width="1.5"/>`;
             svg += `<line x1="${{mx}}" y1="${{GROUND_Y-52}}" x2="${{mx+10}}" y2="${{GROUND_Y-52}}" stroke="#64748b" stroke-width="1.5"/>`;
         }} else if (commits === 0) {{
-            // Road lamp
+            // Poste de luz
             if (daySeed % 5 === 0) {{
                 const lx = x + LOT_W / 2;
                 svg += `<line x1="${{lx}}" y1="${{GROUND_Y}}" x2="${{lx}}" y2="${{GROUND_Y-24}}" stroke="#64748b" stroke-width="1.5"/>`;
@@ -407,7 +408,7 @@ function render(yr, mo, counts) {{
                 svg += `<circle cx="${{lx+8}}" cy="${{GROUND_Y-21}}" r="2" fill="#fef08a"/>`;
             }}
         }} else if (commits === 1) {{
-            // Park
+            // Praça
             svg += `<rect x="${{x}}" y="${{GROUND_Y-6}}" width="${{LOT_W}}" height="6" fill="#15803d" rx="1"/>`;
             svg += `<rect x="${{x+3}}" y="${{GROUND_Y-9}}" width="6" height="3" fill="#b45309"/>`;
             svg += `<line x1="${{x+3}}" y1="${{GROUND_Y-9}}" x2="${{x+3}}" y2="${{GROUND_Y-6}}" stroke="#78350f" stroke-width="1"/>`;
@@ -416,7 +417,7 @@ function render(yr, mo, counts) {{
             svg += `<circle cx="${{x+18}}" cy="${{GROUND_Y-19}}" r="7" fill="#16a34a"/>`;
             svg += `<circle cx="${{x+15}}" cy="${{GROUND_Y-22}}" r="5" fill="#22c55e"/>`;
         }} else {{
-            // Building
+            // Prédio
             let h = commits <= 3 ? 60 : commits <= 6 ? 110 : commits <= 10 ? 160 : 210;
             const yPos = GROUND_Y - h;
             const style = daySeed % 4;
@@ -435,13 +436,13 @@ function render(yr, mo, counts) {{
               </linearGradient>
             </defs>`;
             svg += `<rect x="${{x}}" y="${{yPos}}" width="${{LOT_W}}" height="${{h}}" fill="url(#grad_h_${{daySeed}})" rx="1"/>`;
-            // Side shadow
+            // Sombra lateral
             svg += `<rect x="${{x+LOT_W-4}}" y="${{yPos}}" width="4" height="${{h}}" fill="#000000" opacity="0.2"/>`;
-            // Doors
+            // Portas
             svg += `<rect x="${{x+LOT_W/2-3}}" y="${{GROUND_Y-8}}" width="6" height="8" fill="#1e293b"/>`;
             svg += `<rect x="${{x+LOT_W/2-2}}" y="${{GROUND_Y-7}}" width="2" height="7" fill="#fef08a" opacity="0.8"/>`;
             
-            // Windows
+            // Janelas
             let winSeed = daySeed + 100;
             function rngWin() {{
                 let x = Math.sin(winSeed++) * 10000;
@@ -498,12 +499,12 @@ function render(yr, mo, counts) {{
                 svg += `<path d="M ${{x+2}} ${{yPos}} A ${{LOT_W/2-2}} ${{LOT_W/2-2}} 0 0 1 ${{x+LOT_W-2}} ${{yPos}} Z" fill="${{colors[1]}}"/>`;
             }}
             
-            // Commits badge
+            // Emblema de commits
             svg += `<rect x="${{x+LOT_W/2-7}}" y="${{yPos-16}}" width="14" height="10" fill="#f59e0b" rx="2"/>`;
             svg += `<text x="${{x+LOT_W/2}}" y="${{yPos-8}}" text-anchor="middle" font-size="8" fill="#0f172a" font-weight="bold" font-family="monospace">${{commits}}</text>`;
         }}
         
-        // Day Label
+        // Etiqueta do Dia
         let lblColor = isToday ? "#f59e0b" : "#94a3b8";
         let fontW = isToday ? "bold" : "normal";
         svg += `<text x="${{x + LOT_W/2}}" y="${{GROUND_Y+20}}" text-anchor="middle" font-size="10" fill="${{lblColor}}" font-weight="${{fontW}}" font-family="monospace">${{d}}</text>`;
@@ -513,12 +514,12 @@ function render(yr, mo, counts) {{
         }}
     }}
     
-    // Sidewalk & Road
+    // Calçada e Rua
     svg += `<rect x="0" y="${{GROUND_Y}}" width="${{svgW}}" height="8" fill="#475569"/>`;
     svg += `<rect x="0" y="${{GROUND_Y+8}}" width="${{svgW}}" height="28" fill="#1e293b"/>`;
     svg += `<line x1="0" y1="${{GROUND_Y+22}}" x2="${{svgW}}" y2="${{GROUND_Y+22}}" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="12,12"/>`;
     
-    // Legend
+    // Legenda
     const ly = H - 16;
     const legendItems = [
         ["#1e293b", "0 commits"],
@@ -585,7 +586,7 @@ def main():
     with open(f"{output}/index.html", "w", encoding="utf-8") as f:
         f.write(generate_html(all_data))
         
-    print("Done!")
+    print("Concluído!")
 
 if __name__ == "__main__":
     main()
