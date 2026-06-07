@@ -585,30 +585,35 @@ def generate_tomb_svg():
     X_OFF = 12
     Y_OFF = 48
     COLS = 9
-    CHUNK_H = 15
+    ROWS = 92 # 6 chunks de 15 linhas + 2 de segurança embaixo
 
-    def generate_chunk_grid(start_row, end_row, wall_chance=0.22):
-        h = end_row - start_row + 1
-        grid = [[1 for _ in range(COLS)] for _ in range(h)]
-        for r in range(h):
+    def generate_tomb_maze(wall_chance=0.20):
+        grid = [[1 for _ in range(COLS)] for _ in range(ROWS)]
+        for r in range(ROWS):
             grid[r][0] = 0
             grid[r][COLS-1] = 0
+        # Paredes inferiores de segurança
+        for c in range(COLS):
+            grid[0][c] = 0
+            grid[1][c] = 0
             
         rng = random.Random()
-        for r in range(h):
-            if r == 0 or r == h - 1:
-                continue
+        for r in range(2, ROWS):
             for c in range(1, COLS - 1):
                 if rng.random() < wall_chance:
                     grid[r][c] = 0
-                elif rng.random() < 0.03:
+                elif rng.random() < 0.02:
                     grid[r][c] = 2
-                    
-        grid[0][4] = 1
-        grid[h-1][4] = 1
+
+        # Limpa início e fim para garantir entrada/saída limpas
+        grid[2][4] = 1
+        grid[3][4] = 1
+        grid[ROWS-1][4] = 1
+        grid[ROWS-2][4] = 1
+        
         return grid
 
-    def solve_chunk(grid, start_row, start_x, start_y, end_x, end_y):
+    def solve_maze(grid, start_x, start_y, end_x, end_y):
         queue = [ (start_x, start_y, []) ]
         visited = { (start_x, start_y) }
         
@@ -626,14 +631,13 @@ def generate_tomb_svg():
                 hit_spike = False
                 while True:
                     nx, ny = tx + dx, ty + dy
-                    if nx < 0 or nx >= COLS or ny < start_y or ny > end_y:
+                    if nx < 0 or nx >= COLS or ny < 0 or ny >= len(grid):
                         break
-                    local_ny = ny - start_row
-                    if grid[local_ny][nx] == 0:
+                    if grid[ny][nx] == 0:
                         break
                     tx, ty = nx, ny
                     steps += 1
-                    if grid[local_ny][nx] == 2:
+                    if grid[ty][tx] == 2:
                         hit_spike = True
                         break
                 
@@ -643,48 +647,23 @@ def generate_tomb_svg():
                         queue.append((tx, ty, path + [(cx, cy)]))
         return None
 
-    # Geramos 3 chunks e concatenamos as grades e caminhos
-    grid = [[0]*COLS, [0]*COLS]
-    path = []
-    
-    # Chunk 0: linhas 2 a 17
     attempts = 0
+    path = None
+    grid = None
     while attempts < 2000:
         attempts += 1
-        c0 = generate_chunk_grid(2, 17, 0.22)
-        p0 = solve_chunk(c0, 2, 4, 2, 4, 17)
-        if p0 and 5 <= len(p0) <= 12:
-            grid.extend(c0)
-            path.extend(p0[:-1])
+        grid = generate_tomb_maze(0.20)
+        path = solve_maze(grid, 4, 2, 4, 91)
+        if path and 15 <= len(path) <= 40:
             break
             
-    # Chunk 1: linhas 17 a 32
-    attempts = 0
-    while attempts < 2000:
-        attempts += 1
-        c1 = generate_chunk_grid(17, 32, 0.22)
-        p1 = solve_chunk(c1, 17, 4, 17, 4, 32)
-        if p1 and 5 <= len(p1) <= 12:
-            grid.extend(c1[1:])
-            path.extend(p1[:-1])
-            break
-            
-    # Chunk 2: linhas 32 a 47
-    attempts = 0
-    while attempts < 2000:
-        attempts += 1
-        c2 = generate_chunk_grid(32, 47, 0.22)
-        p2 = solve_chunk(c2, 32, 4, 32, 4, 47)
-        if p2 and 5 <= len(p2) <= 12:
-            grid.extend(c2[1:])
-            path.extend(p2)
-            break
-
     if not path:
-        grid = [[0]*COLS for _ in range(48)]
-        path = [(4, 2), (4, 47)]
+        grid = generate_tomb_maze(0.18)
+        path = solve_maze(grid, 4, 2, 4, 91)
+        if not path:
+            path = [(4, 2), (4, 91)]
 
-    # Adiciona a cópia do início do mapa no topo para rolagem contínua (linhas 2 a 14 copiadas para 48 a 60)
+    # Copia a parte inicial (linhas 2 a 14) no topo para loop visual seamless (linhas 92 a 104)
     for r in range(2, 15):
         grid.append(grid[r][:])
         
@@ -858,7 +837,7 @@ def generate_tomb_svg():
     svg.append('      <g stroke="#1b0e36" stroke-width="0.5" stroke-dasharray="1,5">')
     for c in range(1, COLS - 1):
         x = c * TILE
-        svg.append(f'        <line x1="{x}" y1="0" x2="{x}" y2="-1500"/>')
+        svg.append(f'        <line x1="{x}" y1="0" x2="{x}" y2="-3000"/>')
     for r in range(len(grid)):
         y = - r * TILE
         svg.append(f'        <line x1="0" y1="{y}" x2="216" y2="{y}"/>')
@@ -874,8 +853,8 @@ def generate_tomb_svg():
                 svg.append(f'      <rect x="{x}" y="{y-TILE}" width="24" height="24" fill="url(#wallGrad)" stroke="#7b2cbf" stroke-width="0.5" rx="2"/>')
                 svg.append(f'      <rect x="{x+2}" y="{y-TILE+2}" width="20" height="20" fill="none" stroke="#210535" stroke-width="0.5"/>')
             elif val == 1:
-                if (c, r) != (4, 2) and (c, r) != (4, 47):
-                    dot_id = f' id="dot-{c}-{r}"' if r < 47 else ''
+                if (c, r) != (4, 2) and (c, r) != (4, 91):
+                    dot_id = f' id="dot-{c}-{r}"' if r < 91 else ''
                     svg.append(f'      <circle{dot_id} cx="{x+12}" cy="{y-12}" r="3" fill="#ffb703"/>')
             elif val == 2:
                 svg.append(f'      <g transform="translate({x}, {y-TILE})">')
