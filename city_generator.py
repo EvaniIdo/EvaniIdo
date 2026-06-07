@@ -580,7 +580,7 @@ def main():
         json.dump(all_data, f)
         
     cur = f"{today.year}-{today.month:02d}"
-    with open(f"{output}/city.svg", "w", encoding="utf-8") as f:
+    with open(f"{output}/skyline.svg", "w", encoding="utf-8") as f:
         f.write(generate_svg(today.year, today.month, all_data.get(cur, {})))
         
     with open(f"{output}/index.html", "w", encoding="utf-8") as f:
