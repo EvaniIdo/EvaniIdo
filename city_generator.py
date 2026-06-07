@@ -10,10 +10,11 @@ GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_USER  = os.environ.get("GITHUB_USER", "EvaniIdo")
 
 HEADERS = {
-    "Authorization": f"Bearer {GITHUB_TOKEN}",
     "Accept": "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
 }
+if GITHUB_TOKEN:
+    HEADERS["Authorization"] = f"Bearer {GITHUB_TOKEN}"
 
 def gh_get(url):
     req = urllib.request.Request(url, headers=HEADERS)
@@ -26,7 +27,7 @@ def gh_get(url):
 def fetch_repos():
     repos, page = [], 1
     while True:
-        chunk = gh_get(f"https://api.github.com/user/repos?per_page=100&page={page}&affiliation=owner")
+        chunk = gh_get(f"https://api.github.com/users/{GITHUB_USER}/repos?per_page=100&page={page}&type=owner")
         if not chunk: break
         repos += [r["full_name"] for r in chunk]
         if len(chunk) < 100: break
@@ -40,7 +41,7 @@ def commits_by_day(year, month):
     counts = {d: 0 for d in range(1, last_day + 1)}
     for repo in fetch_repos():
         url = (f"https://api.github.com/repos/{repo}/commits"
-               f"?author={GITHUB_USER}&since={since}&until={until}&per_page=100")
+               f"?since={since}&until={until}&per_page=100")
         items = gh_get(url)
         if not isinstance(items, list): continue
         for item in items:
@@ -112,9 +113,9 @@ def generate_svg(year, month, counts):
     
     svg.append(f'<text x="{W//2}" y="40" text-anchor="middle" font-size="20" fill="#e5e7eb" font-family="sans-serif" font-weight="bold">&#x1F4C5; {mname}</text>')
     
-    tile_w = 25
+    tile_w = 40
     offset_x = W // 2
-    offset_y = 150
+    offset_y = 250
     
     # We will lay out the month as a calendar grid
     # col = day of week (0 to 6)
@@ -222,9 +223,9 @@ function renderSVG(year, month, counts) {{
     const mNames=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
     svg += `<text x="${{W/2}}" y="40" text-anchor="middle" font-size="20" fill="#e5e7eb" font-family="sans-serif" font-weight="bold">&#x1F4C5; ${{mNames[month-1]}} ${{year}}</text>`;
     
-    const tileW = 25;
+    const tileW = 40;
     const offsetX = W / 2;
-    const offsetY = 150;
+    const offsetY = 250;
     
     const startWeekday = new Date(year, month - 1, 1).getDay(); // 0 = Sun
     const adjustedStart = startWeekday === 0 ? 6 : startWeekday - 1; // 0 = Mon
