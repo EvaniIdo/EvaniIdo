@@ -62,30 +62,28 @@
 
 ---
 
-### 🏙️ GitHub City & 🤖 Tomb of the Mask Autoplay
+### 🏙️ GitHub City — Commits do Mês
 
-> Cada dia do mês vira um quarteirão da cidade. E ao lado, um Bot inteligente percorre labirintos procedurais de Tomb of the Mask em tempo real no meu perfil!
-
-<br>
-
-<table align="center" border="0" cellpadding="10" cellspacing="0">
-  <tr valign="top">
-    <td width="75%">
-      <a href="https://evaniido.github.io/EvaniIdo/" title="Ver cidade interativa com seletor de mês">
-        <img src="https://raw.githubusercontent.com/EvaniIdo/EvaniIdo/stats/skyline_v3.svg" alt="GitHub City — commits do mês atual" width="100%" />
-      </a>
-    </td>
-    <td width="25%" align="center">
-      <img src="https://raw.githubusercontent.com/EvaniIdo/EvaniIdo/stats/tomb_v1.svg" alt="Tomb of the Mask Autoplay Bot" width="240" />
-    </td>
-  </tr>
-</table>
+> Cada dia do mês vira um quarteirão da cidade. Quanto mais commits, maior o prédio. Dias futuros ficam como terrenos em construção.
 
 <div align="center">
-  <br>
+  <a href="https://evaniido.github.io/EvaniIdo/" title="Ver cidade interativa com seletor de mês">
+    <img src="https://raw.githubusercontent.com/EvaniIdo/EvaniIdo/stats/skyline_v3.svg" alt="GitHub City — commits do mês atual" width="100%" />
+  </a>
+  <br><br>
   <a href="https://evaniido.github.io/EvaniIdo/">
     <img src="https://img.shields.io/badge/🏙️_Ver_Cidade_Interativa-1f2937?style=for-the-badge" alt="Ver cidade interativa"/>
   </a>
+</div>
+
+---
+
+### 🤖 Tomb of the Mask — Autoplay Bot
+
+> Um bot inteligente percorre labirintos procedurais de Tomb of the Mask subindo infinitamente em tempo real no meu perfil!
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/EvaniIdo/EvaniIdo/stats/tomb_v1.svg" alt="Tomb of the Mask Autoplay Bot" width="300" />
 </div>
 
 ---
