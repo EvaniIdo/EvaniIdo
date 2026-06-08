@@ -2,7 +2,7 @@
   
   # ⚡ Olá, eu sou o Marcus Vinicius
   
-  ### **Analista de Dados & Analytics Engineer**
+  ### **Analista de Dados & Gestão de Estoque**
   
   [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/marcus-vinicius-073b93163/)
   [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/EvaniIdo)
@@ -17,7 +17,7 @@
 ### 💻 Sobre Mim
 
 * 📖 **Graduando em Estatística** na Universidade Federal do Ceará (UFC)
-* 💼 **Analista de Dados & Analytics Engineer** na SBFARMA
+* 💼 **Analista de Dados & Gestão de Estoque** na SBFARMA
 * 🧠 **Focado em** Engenharia de Analytics, Automação de Processos (RPA) e BI
 * 🏠 **Fortaleza / CE**
 
