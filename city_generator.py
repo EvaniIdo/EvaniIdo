@@ -585,152 +585,199 @@ def generate_tomb_svg():
     COLS = 9
     ROWS = 13
 
-    def generate_room(wall_chance=0.20):
-        grid = [[1 for _ in range(COLS)] for _ in range(ROWS)]
-        for r in range(ROWS):
-            grid[r][0] = 0
-            grid[r][COLS-1] = 0
-        for c in range(COLS):
-            grid[0][c] = 0
-            grid[ROWS-1][c] = 0
-            
-        rng = random.Random()
-        for r in range(1, ROWS - 1):
-            for c in range(1, COLS - 1):
-                if rng.random() < wall_chance:
-                    grid[r][c] = 0
-        return grid
-
-    def get_slide_destination(grid, cx, cy, dx, dy):
+    # ── Slide physics ────────────────────────────────────────────────────────
+    def slide_dest(grid, cx, cy, dx, dy):
         tx, ty = cx, cy
         while True:
             nx, ny = tx + dx, ty + dy
-            if nx < 0 or nx >= COLS or ny < 0 or ny >= ROWS:
+            if not (0 <= nx < COLS and 0 <= ny < ROWS):
                 break
             if grid[ny][nx] == 0:
                 break
             tx, ty = nx, ny
         return tx, ty
 
-    def analyze_slide_connectivity(grid, start_x, start_y):
+    def slide_cells(cx, cy, tx, ty):
+        """All cells crossed (not including start) when sliding from (cx,cy) to (tx,ty)."""
+        dx = 0 if tx == cx else (1 if tx > cx else -1)
+        dy = 0 if ty == cy else (1 if ty > cy else -1)
+        cells, x, y = [], cx, cy
+        while (x, y) != (tx, ty):
+            x += dx; y += dy
+            cells.append((x, y))
+        return cells
+
+    # ── Build full slide graph from a starting cell ───────────────────────────
+    def build_slide_graph(grid, start_x, start_y):
         queue = [(start_x, start_y)]
-        decision_points = { (start_x, start_y) }
-        slides_from = {}
-        
+        dps = {(start_x, start_y)}
+        adj = {}          # dp -> list of (dest_dp, [cells crossed])
         while queue:
             cx, cy = queue.pop(0)
-            slides_from[(cx, cy)] = []
-            for dx, dy in [(0, 1), (0, -1), (-1, 0), (1, 0)]:
-                tx, ty = get_slide_destination(grid, cx, cy, dx, dy)
+            adj[(cx, cy)] = []
+            for dx, dy in [(1,0),(-1,0),(0,1),(0,-1)]:
+                tx, ty = slide_dest(grid, cx, cy, dx, dy)
                 if (tx, ty) != (cx, cy):
-                    cells = []
-                    x, y = cx, cy
-                    while (x, y) != (tx, ty):
-                        x += dx
-                        y += dy
-                        cells.append((x, y))
-                    slides_from[(cx, cy)].append(((tx, ty), cells))
-                    if (tx, ty) not in decision_points:
-                        decision_points.add((tx, ty))
+                    adj[(cx, cy)].append(((tx, ty), slide_cells(cx, cy, tx, ty)))
+                    if (tx, ty) not in dps:
+                        dps.add((tx, ty))
                         queue.append((tx, ty))
-                        
-        passable_cells = set()
-        for src, transitions in slides_from.items():
-            for dest, cells in transitions:
-                passable_cells.update(cells)
-                
-        return decision_points, passable_cells, slides_from
+        return dps, adj
 
-    def make_fully_passable(grid, start_x, start_y):
-        while True:
-            open_cells = {(c, r) for r in range(1, ROWS - 1) for c in range(1, COLS - 1) if grid[r][c] != 0}
-            dps, passable, slides_from = analyze_slide_connectivity(grid, start_x, start_y)
-            passable_with_start = passable.union({(start_x, start_y)})
-            
-            unpassable = open_cells - passable_with_start
-            if not unpassable:
-                break
-                
-            for c, r in unpassable:
-                grid[r][c] = 0
-                
-        return grid
+    # ── Check every dp can reach every other dp (strong connectivity) ─────────
+    def is_strongly_connected(adj, dps):
+        if len(dps) < 2:
+            return True
+        start = next(iter(dps))
+        # forward BFS
+        seen = {start}
+        q = [start]
+        while q:
+            cur = q.pop()
+            for dest, _ in adj.get(cur, []):
+                if dest not in seen:
+                    seen.add(dest); q.append(dest)
+        if seen != dps:
+            return False
+        # reverse BFS (follow edges backwards)
+        rev = {dp: [] for dp in dps}
+        for src, edges in adj.items():
+            for dest, cells in edges:
+                rev[dest].append(src)
+        seen2 = {start}
+        q = [start]
+        while q:
+            cur = q.pop()
+            for prev in rev.get(cur, []):
+                if prev not in seen2:
+                    seen2.add(prev); q.append(prev)
+        return seen2 == dps
 
-    def solve_room(grid, start_x, start_y):
-        decision_points, passable_cells, slides_from = analyze_slide_connectivity(grid, start_x, start_y)
-        if len(passable_cells) < 25:
-            return None, None, None
-            
-        coins = set(passable_cells)
-        coins.discard((start_x, start_y))
-        
-        path = [(start_x, start_y)]
-        current = (start_x, start_y)
-        
+    # ── Prim's maze carving (all walls → carve corridors) ────────────────────
+    # Grid coords are at 2x scale internally so walls sit between cells.
+    # Then we downsample to COLS×ROWS.
+    # But COLS=9 ROWS=13 are both odd, perfect for a 2-scale maze.
+    def carve_maze():
+        # Work at (COLS)×(ROWS) where border is always wall.
+        # Inner cells: odd coords are "rooms", even coords are "walls between rooms".
+        # (COLS=9, ROWS=13 → 4×6 room cells inside)
+        W, H = COLS, ROWS
+        g = [[0]*W for _ in range(H)]  # start all walls
+
+        # Mark all odd-coord inner cells as open
+        room_cells = [(c, r) for r in range(1, H, 2) for c in range(1, W, 2)]
+        in_maze = set()
+
+        start = random.choice(room_cells)
+        in_maze.add(start)
+        g[start[1]][start[0]] = 1
+
+        # frontier: list of (wall_cell, room_behind_wall)
+        def add_frontiers(rc):
+            c, r = rc
+            for dc, dr in [(2,0),(-2,0),(0,2),(0,-2)]:
+                nc, nr = c+dc, r+dr
+                if 0 < nc < W and 0 < nr < H and (nc,nr) not in in_maze:
+                    frontiers.append(((c+dc//2, r+dr//2), (nc, nr)))
+
+        frontiers = []
+        add_frontiers(start)
+
+        while frontiers:
+            random.shuffle(frontiers)
+            wall, nxt = frontiers.pop()
+            if nxt in in_maze:
+                continue
+            in_maze.add(nxt)
+            g[nxt[1]][nxt[0]] = 1       # open the room
+            g[wall[1]][wall[0]] = 1     # open the corridor between
+            add_frontiers(nxt)
+
+        # Add some extra loops so the slide graph is richer
+        extra_opens = max(4, len(room_cells) // 3)
+        candidates = [(c, r) for r in range(1, H-1) for c in range(1, W-1)
+                       if g[r][c] == 0 and r % 2 == 0 and c % 2 == 0]
+        random.shuffle(candidates)
+        for c, r in candidates[:extra_opens]:
+            g[r][c] = 1
+
+        return g
+
+    # ── Greedy BFS solver: collect all coins via slides ───────────────────────
+    def solve(grid, start, adj):
+        dps, _ = build_slide_graph(grid, start[0], start[1])
+        # All passable cells (excluding start) get coins
+        all_coins = set()
+        for src, edges in adj.items():
+            for dest, cells in edges:
+                all_coins.update(cells)
+        all_coins.discard(start)
+
+        coins = set(all_coins)
+        path = [start]
+        cur = start
+
         while coins:
-            queue = [ (current[0], current[1], []) ]
-            visited = { current }
-            found_path = None
-            
+            # BFS over decision points to find nearest slide that crosses a coin
+            queue = [(cur, [])]
+            visited = {cur}
+            found = None
             while queue:
-                cx, cy, step_path = queue.pop(0)
-                coin_found = False
-                for dest, cells in slides_from.get((cx, cy), []):
+                pos, steps = queue.pop(0)
+                for dest, cells in adj.get(pos, []):
                     if any(c in coins for c in cells):
-                        found_path = step_path + [(cx, cy), dest]
-                        coin_found = True
+                        found = steps + [pos, dest]
                         break
-                if coin_found:
-                    break
-                    
-                for dest, cells in slides_from.get((cx, cy), []):
                     if dest not in visited:
                         visited.add(dest)
-                        queue.append((dest[0], dest[1], step_path + [(cx, cy)]))
-                        
-            if not found_path:
+                        queue.append((dest, steps + [pos]))
+                if found:
+                    break
+            if not found:
                 break
-                
-            for i in range(len(found_path) - 1):
-                x1, y1 = found_path[i]
-                x2, y2 = found_path[i+1]
-                dx = 1 if x2 > x1 else (-1 if x2 < x1 else 0)
-                dy = 1 if y2 > y1 else (-1 if y2 < y1 else 0)
-                tx, ty = x1, y1
-                while (tx, ty) != (x2, y2):
-                    tx += dx
-                    ty += dy
-                    coins.discard((tx, ty))
-                path.append((x2, y2))
-                
-            current = found_path[-1]
-            
-        return path, passable_cells, decision_points
+            # Trace the full path and erase coins
+            for i in range(len(found) - 1):
+                p1, p2 = found[i], found[i+1]
+                for cell in slide_cells(p1[0], p1[1], p2[0], p2[1]):
+                    coins.discard(cell)
+                path.append(p2)
+            cur = found[-1]
 
-    def build_room_data():
-        attempts = 0
-        while attempts < 1000:
-            attempts += 1
-            grid = generate_room(0.20)
-            open_cells = [(c, r) for r in range(1, ROWS - 1) for c in range(1, COLS - 1) if grid[r][c] != 0]
-            if not open_cells:
+        return path, all_coins
+
+    # ── Build one valid room ──────────────────────────────────────────────────
+    def build_room():
+        for _ in range(200):
+            grid = carve_maze()
+            # pick a random open inner cell as start
+            open_inner = [(c, r) for r in range(1, ROWS-1)
+                           for c in range(1, COLS-1) if grid[r][c] == 1]
+            if not open_inner:
                 continue
-            start_x, start_y = random.choice(open_cells)
-            grid = make_fully_passable(grid, start_x, start_y)
-            path, coins, dps = solve_room(grid, start_x, start_y)
-            if path and len(coins) >= 30:
-                return grid, path, start_x, start_y, coins
-                
+            sx, sy = random.choice(open_inner)
+            dps, adj = build_slide_graph(grid, sx, sy)
+            if len(dps) < 8:
+                continue
+            if not is_strongly_connected(adj, dps):
+                continue
+            # Verify all passable cells are actually reachable and collectable
+            path, coins = solve(grid, (sx, sy), adj)
+            if len(coins) >= 20:
+                return grid, path, sx, sy, coins
+
+        # Absolute fallback: open corridor grid
         grid = [[0]*COLS for _ in range(ROWS)]
         for r in range(1, ROWS-1):
             for c in range(1, COLS-1):
                 grid[r][c] = 1
-        return grid, [(4, 6)], 4, 6, {(4, 6)}
+        dps, adj = build_slide_graph(grid, 4, 6)
+        path, coins = solve(grid, (4, 6), adj)
+        return grid, path, 4, 6, coins
 
     num_rooms = 4
     rooms = []
     for i in range(num_rooms):
-        grid, path, start_x, start_y, coins = build_room_data()
+        grid, path, start_x, start_y, coins = build_room()
         rooms.append({
             "grid": grid,
             "path": path,
