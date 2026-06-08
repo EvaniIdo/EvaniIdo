@@ -583,9 +583,9 @@ if (keys.length > 0) {{
 def generate_tomb_svg():
     TILE = 24
     COLS = 9
-    ROWS = 11
+    ROWS = 13
 
-    def generate_room(wall_chance=0.25):
+    def generate_room(wall_chance=0.22):
         grid = [[1 for _ in range(COLS)] for _ in range(ROWS)]
         for r in range(ROWS):
             grid[r][0] = 0
@@ -601,19 +601,6 @@ def generate_tomb_svg():
                     grid[r][c] = 0
         return grid
 
-    def get_reachable_cells(grid, start_x, start_y):
-        queue = [(start_x, start_y)]
-        visited = { (start_x, start_y) }
-        while queue:
-            cx, cy = queue.pop(0)
-            for dx, dy in [(0, 1), (0, -1), (-1, 0), (1, 0)]:
-                nx, ny = cx + dx, cy + dy
-                if 0 <= nx < COLS and 0 <= ny < ROWS:
-                    if grid[ny][nx] != 0 and (nx, ny) not in visited:
-                        visited.add((nx, ny))
-                        queue.append((nx, ny))
-        return visited
-
     def get_slide_destination(grid, cx, cy, dx, dy):
         tx, ty = cx, cy
         while True:
@@ -625,12 +612,41 @@ def generate_tomb_svg():
             tx, ty = nx, ny
         return tx, ty
 
+    def analyze_slide_connectivity(grid, start_x, start_y):
+        queue = [(start_x, start_y)]
+        decision_points = { (start_x, start_y) }
+        slides_from = {}
+        
+        while queue:
+            cx, cy = queue.pop(0)
+            slides_from[(cx, cy)] = []
+            for dx, dy in [(0, 1), (0, -1), (-1, 0), (1, 0)]:
+                tx, ty = get_slide_destination(grid, cx, cy, dx, dy)
+                if (tx, ty) != (cx, cy):
+                    cells = []
+                    x, y = cx, cy
+                    while (x, y) != (tx, ty):
+                        x += dx
+                        y += dy
+                        cells.append((x, y))
+                    slides_from[(cx, cy)].append(((tx, ty), cells))
+                    if (tx, ty) not in decision_points:
+                        decision_points.add((tx, ty))
+                        queue.append((tx, ty))
+                        
+        passable_cells = set()
+        for src, transitions in slides_from.items():
+            for dest, cells in transitions:
+                passable_cells.update(cells)
+                
+        return decision_points, passable_cells, slides_from
+
     def solve_room(grid, start_x, start_y):
-        reachable = get_reachable_cells(grid, start_x, start_y)
-        if len(reachable) < 18:
-            return None, None
+        decision_points, passable_cells, slides_from = analyze_slide_connectivity(grid, start_x, start_y)
+        if len(passable_cells) < 25:
+            return None, None, None
             
-        coins = set(reachable)
+        coins = set(passable_cells)
         coins.discard((start_x, start_y))
         
         path = [(start_x, start_y)]
@@ -643,18 +659,22 @@ def generate_tomb_svg():
             
             while queue:
                 cx, cy, step_path = queue.pop(0)
-                if (cx, cy) in coins:
-                    found_path = step_path + [(cx, cy)]
+                coin_found = False
+                for dest, cells in slides_from.get((cx, cy), []):
+                    if any(c in coins for c in cells):
+                        found_path = step_path + [(cx, cy), dest]
+                        coin_found = True
+                        break
+                if coin_found:
                     break
                     
-                for dx, dy in [(0, 1), (0, -1), (-1, 0), (1, 0)]:
-                    tx, ty = get_slide_destination(grid, cx, cy, dx, dy)
-                    if (tx, ty) != (cx, cy) and (tx, ty) not in visited:
-                        visited.add((tx, ty))
-                        queue.append((tx, ty, step_path + [(cx, cy)]))
+                for dest, cells in slides_from.get((cx, cy), []):
+                    if dest not in visited:
+                        visited.add(dest)
+                        queue.append((dest[0], dest[1], step_path + [(cx, cy)]))
                         
             if not found_path:
-                return None, None
+                break
                 
             for i in range(len(found_path) - 1):
                 x1, y1 = found_path[i]
@@ -666,39 +686,41 @@ def generate_tomb_svg():
                     tx += dx
                     ty += dy
                     coins.discard((tx, ty))
-                path.append((x2, y2))
-                
+                if found_path[i+1] not in path or i == len(found_path) - 2:
+                    path.append(found_path[i+1])
+                    
             current = found_path[-1]
             
-        return path, reachable
+        return path, passable_cells, decision_points
 
     def build_room_data():
         attempts = 0
         while attempts < 1000:
             attempts += 1
-            grid = generate_room(0.24)
+            grid = generate_room(0.22)
             open_cells = [(c, r) for r in range(1, ROWS - 1) for c in range(1, COLS - 1) if grid[r][c] != 0]
             if not open_cells:
                 continue
             start_x, start_y = random.choice(open_cells)
-            path, reachable = solve_room(grid, start_x, start_y)
+            path, coins, dps = solve_room(grid, start_x, start_y)
             if path:
-                return grid, path, start_x, start_y, reachable
+                return grid, path, start_x, start_y, coins
+                
         grid = [[0]*COLS for _ in range(ROWS)]
         for r in range(1, ROWS-1):
             for c in range(1, COLS-1):
                 grid[r][c] = 1
-        return grid, [(4, 5)], 4, 5, {(4, 5)}
+        return grid, [(4, 6)], 4, 6, {(4, 6)}
 
     num_rooms = 4
     rooms = []
     for i in range(num_rooms):
-        grid, path, start_x, start_y, reachable = build_room_data()
+        grid, path, start_x, start_y, coins = build_room_data()
         rooms.append({
             "grid": grid,
             "path": path,
             "start": (start_x, start_y),
-            "coins": list(reachable - {(start_x, start_y)})
+            "coins": list(coins)
         })
         
     room_duration = 7.5
@@ -851,7 +873,7 @@ def generate_tomb_svg():
     svg.append('      </feMerge>')
     svg.append('    </filter>')
     svg.append('    <clipPath id="gridClip">')
-    svg.append('      <rect x="0" y="0" width="216" height="264"/>')
+    svg.append('      <rect x="0" y="0" width="216" height="312"/>')
     svg.append('    </clipPath>')
     svg.append('  </defs>')
     
@@ -862,7 +884,6 @@ def generate_tomb_svg():
     svg.append('      100% { opacity: 0.6; }')
     svg.append('    }')
     svg.append('    .pulse-text { animation: pulse 2s infinite ease-in-out; }')
-    
     svg.extend(styles)
     svg.extend(keyframe_animations)
     svg.append('  </style>')
@@ -872,17 +893,16 @@ def generate_tomb_svg():
     svg.append('  <text x="120" y="24" text-anchor="middle" font-size="12" fill="#ffb703" font-family="monospace" font-weight="bold">🛡️ TOMB OF THE MASK</text>')
     svg.append('  <text x="120" y="38" text-anchor="middle" font-size="8" fill="#00f5d4" font-family="monospace" font-weight="bold" class="pulse-text">🤖 AUTOPLAY BOT</text>')
     
-    svg.append('  <g transform="translate(12, 72)">')
-    svg.append('    <rect width="216" height="264" fill="#0c0314" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
+    svg.append('  <g transform="translate(12, 48)">')
+    svg.append('    <rect width="216" height="312" fill="#0c0314" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
     
     for idx, r_data in enumerate(rooms):
         grid = r_data["grid"]
-        
         svg.append(f'    <g id="room-{idx}" clip-path="url(#gridClip)">')
         svg.append('      <g stroke="#1b0e36" stroke-width="0.5" stroke-dasharray="1,5">')
         for c in range(1, COLS):
             x = c * TILE
-            svg.append(f'        <line x1="{x}" y1="0" x2="{x}" y2="264"/>')
+            svg.append(f'        <line x1="{x}" y1="0" x2="{x}" y2="312"/>')
         for r in range(1, ROWS):
             y = r * TILE
             svg.append(f'        <line x1="0" y1="{y}" x2="216" y2="{y}"/>')
@@ -897,7 +917,7 @@ def generate_tomb_svg():
                     svg.append(f'      <rect x="{x}" y="{y}" width="24" height="24" fill="url(#wallGrad)" stroke="#7b2cbf" stroke-width="0.5" rx="2"/>')
                     svg.append(f'      <rect x="{x+2}" y="{y+2}" width="20" height="20" fill="none" stroke="#210535" stroke-width="0.5"/>')
                 elif val == 1:
-                    if (c, r) != r_data["start"]:
+                    if (c, r) in r_data["coins"]:
                         svg.append(f'      <circle id="dot-{idx}-{c}-{r}" cx="{x+12}" cy="{y+12}" r="3" fill="#ffb703"/>')
                         
         svg.append(f'      <g id="player-{idx}" filter="url(#glow)">')
@@ -913,8 +933,8 @@ def generate_tomb_svg():
         
     svg.append('  </g>')
     
-    svg.append('  <rect x="12" y="72" width="216" height="264" fill="none" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
-    svg.append('  <text x="120" y="362" text-anchor="middle" font-size="7" fill="#64748b" font-family="monospace">⚡ PROCEDURAL LEVEL SOLVER</text>')
+    svg.append('  <rect x="12" y="48" width="216" height="312" fill="none" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
+    svg.append('  <text x="120" y="372" text-anchor="middle" font-size="7" fill="#64748b" font-family="monospace">⚡ PROCEDURAL LEVEL SOLVER</text>')
     svg.append('</svg>')
     
     return "\n".join(svg)
