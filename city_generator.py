@@ -687,21 +687,24 @@ def generate_tomb_svg():
             g[wall[1]][wall[0]] = 1
             add_frontiers(nxt)
 
-        # Add extra loops: open between 25-40% of remaining even-coord walls
-        # This creates the dense interconnected feel of Tomb of the Mask
+        # Add extra loops: open ~12% of remaining internal walls to create
+        # just enough shortcuts for rich slide connectivity without opening everything
         wall_candidates = [(c, r) for r in range(1, H-1) for c in range(1, W-1)
                            if g[r][c] == 0]
         random.shuffle(wall_candidates)
-        # Open ~30% of internal walls to create loops
-        n_extra = len(wall_candidates) * 3 // 10
-        for c, r in wall_candidates[:n_extra]:
-            # Only open if it connects two open cells (creates a real shortcut)
+        n_extra = max(3, len(wall_candidates) * 12 // 100)
+        opened = 0
+        for c, r in wall_candidates:
+            if opened >= n_extra:
+                break
+            # Only open if it connects two already-open cells
             neighbors_open = sum(
                 1 for dc, dr in [(1,0),(-1,0),(0,1),(0,-1)]
                 if 0 <= c+dc < W and 0 <= r+dr < H and g[r+dr][c+dc] == 1
             )
             if neighbors_open >= 2:
                 g[r][c] = 1
+                opened += 1
 
         return g
 
