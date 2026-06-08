@@ -582,7 +582,7 @@ if (keys.length > 0) {{
 
 def generate_tomb_svg():
     TILE = 24
-    COLS = 9
+    COLS = 13
     ROWS = 13
 
     # ── Física do Deslizamento ───────────────────────────────────────────────
@@ -764,7 +764,7 @@ def generate_tomb_svg():
                 continue
             # Garante que todas as moedas são coletáveis
             path, coins = solve(grid, (sx, sy), adj)
-            if len(coins) >= 20:
+            if len(coins) >= 30:
                 return grid, path, sx, sy, coins
 
         # Fallback absoluto
@@ -772,11 +772,11 @@ def generate_tomb_svg():
         for r in range(1, ROWS-1):
             for c in range(1, COLS-1):
                 grid[r][c] = 1
-        dps, adj = build_slide_graph(grid, 4, 6)
-        path, coins = solve(grid, (4, 6), adj)
-        return grid, path, 4, 6, coins
+        dps, adj = build_slide_graph(grid, 6, 6)
+        path, coins = solve(grid, (6, 6), adj)
+        return grid, path, 6, 6, coins
 
-    num_rooms = 4
+    num_rooms = 3
     rooms = []
     for i in range(num_rooms):
         grid, path, start_x, start_y, coins = build_room()
@@ -787,7 +787,7 @@ def generate_tomb_svg():
             "coins": list(coins)
         })
         
-    room_duration = 7.5
+    room_duration = 12.0
     total_duration = num_rooms * room_duration
     
     styles = []
@@ -923,7 +923,7 @@ def generate_tomb_svg():
             styles.append(f"    #dot-{idx}-{dc}-{dr} {{ animation: {dot_kf_name} {total_duration:.2f}s infinite linear; transform-origin: {cx}px {cy}px; }}")
 
     svg = []
-    svg.append('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="380" viewBox="0 0 240 380">')
+    svg.append('<svg xmlns="http://www.w3.org/2000/svg" width="336" height="380" viewBox="0 0 336 380">')
     svg.append('  <defs>')
     svg.append('    <linearGradient id="wallGrad" x1="0" y1="0" x2="1" y2="1">')
     svg.append('      <stop offset="0%" stop-color="#2d0b5a"/>')
@@ -937,7 +937,7 @@ def generate_tomb_svg():
     svg.append('      </feMerge>')
     svg.append('    </filter>')
     svg.append('    <clipPath id="gridClip">')
-    svg.append('      <rect x="0" y="0" width="216" height="312"/>')
+    svg.append('      <rect x="0" y="0" width="312" height="312"/>')
     svg.append('    </clipPath>')
     svg.append('  </defs>')
     
@@ -952,13 +952,13 @@ def generate_tomb_svg():
     svg.extend(keyframe_animations)
     svg.append('  </style>')
     
-    svg.append('  <rect width="240" height="380" fill="#08020d" rx="8" stroke="#7b2cbf" stroke-width="2"/>')
-    svg.append('  <rect x="2" y="2" width="236" height="44" fill="#140526" rx="6"/>')
-    svg.append('  <text x="120" y="24" text-anchor="middle" font-size="12" fill="#ffb703" font-family="monospace" font-weight="bold">🛡️ TOMB OF THE MASK</text>')
-    svg.append('  <text x="120" y="38" text-anchor="middle" font-size="8" fill="#00f5d4" font-family="monospace" font-weight="bold" class="pulse-text">🤖 AUTOPLAY BOT</text>')
+    svg.append('  <rect width="336" height="380" fill="#08020d" rx="8" stroke="#7b2cbf" stroke-width="2"/>')
+    svg.append('  <rect x="2" y="2" width="332" height="44" fill="#140526" rx="6"/>')
+    svg.append('  <text x="168" y="24" text-anchor="middle" font-size="12" fill="#ffb703" font-family="monospace" font-weight="bold">🛡️ TOMB OF THE MASK</text>')
+    svg.append('  <text x="168" y="38" text-anchor="middle" font-size="8" fill="#00f5d4" font-family="monospace" font-weight="bold" class="pulse-text">🤖 AUTOPLAY BOT</text>')
     
     svg.append('  <g transform="translate(12, 48)">')
-    svg.append('    <rect width="216" height="312" fill="#0c0314" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
+    svg.append('    <rect width="312" height="312" fill="#0c0314" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
     
     for idx, r_data in enumerate(rooms):
         grid = r_data["grid"]
@@ -969,7 +969,7 @@ def generate_tomb_svg():
             svg.append(f'        <line x1="{x}" y1="0" x2="{x}" y2="312"/>')
         for r in range(1, ROWS):
             y = r * TILE
-            svg.append(f'        <line x1="0" y1="{y}" x2="216" y2="{y}"/>')
+            svg.append(f'        <line x1="0" y1="{y}" x2="312" y2="{y}"/>')
         svg.append('      </g>')
         
         for r in range(ROWS):
@@ -997,8 +997,8 @@ def generate_tomb_svg():
         
     svg.append('  </g>')
     
-    svg.append('  <rect x="12" y="48" width="216" height="312" fill="none" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
-    svg.append('  <text x="120" y="372" text-anchor="middle" font-size="7" fill="#64748b" font-family="monospace">⚡ PROCEDURAL LEVEL SOLVER</text>')
+    svg.append('  <rect x="12" y="48" width="312" height="312" fill="none" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
+    svg.append('  <text x="168" y="372" text-anchor="middle" font-size="7" fill="#64748b" font-family="monospace">⚡ PROCEDURAL LEVEL SOLVER</text>')
     svg.append('</svg>')
     
     return "\n".join(svg)
