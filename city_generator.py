@@ -653,26 +653,20 @@ def generate_tomb_svg():
                     seen2.add(prev); q.append(prev)
         return seen2 == dps
 
-    # ── Prim's maze carving (all walls → carve corridors) ────────────────────
-    # Grid coords are at 2x scale internally so walls sit between cells.
-    # Then we downsample to COLS×ROWS.
-    # But COLS=9 ROWS=13 are both odd, perfect for a 2-scale maze.
+    # ── Prim's maze carving (dense Tomb-of-the-Mask style) ───────────────────
     def carve_maze():
-        # Work at (COLS)×(ROWS) where border is always wall.
-        # Inner cells: odd coords are "rooms", even coords are "walls between rooms".
-        # (COLS=9, ROWS=13 → 4×6 room cells inside)
         W, H = COLS, ROWS
-        g = [[0]*W for _ in range(H)]  # start all walls
+        # Start all walls
+        g = [[0]*W for _ in range(H)]
 
-        # Mark all odd-coord inner cells as open
+        # Room cells sit at odd coords; corridor cells at mixed even/odd
         room_cells = [(c, r) for r in range(1, H, 2) for c in range(1, W, 2)]
-        in_maze = set()
 
+        in_maze = set()
         start = random.choice(room_cells)
         in_maze.add(start)
         g[start[1]][start[0]] = 1
 
-        # frontier: list of (wall_cell, room_behind_wall)
         def add_frontiers(rc):
             c, r = rc
             for dc, dr in [(2,0),(-2,0),(0,2),(0,-2)]:
@@ -689,17 +683,25 @@ def generate_tomb_svg():
             if nxt in in_maze:
                 continue
             in_maze.add(nxt)
-            g[nxt[1]][nxt[0]] = 1       # open the room
-            g[wall[1]][wall[0]] = 1     # open the corridor between
+            g[nxt[1]][nxt[0]] = 1
+            g[wall[1]][wall[0]] = 1
             add_frontiers(nxt)
 
-        # Add some extra loops so the slide graph is richer
-        extra_opens = max(4, len(room_cells) // 3)
-        candidates = [(c, r) for r in range(1, H-1) for c in range(1, W-1)
-                       if g[r][c] == 0 and r % 2 == 0 and c % 2 == 0]
-        random.shuffle(candidates)
-        for c, r in candidates[:extra_opens]:
-            g[r][c] = 1
+        # Add extra loops: open between 25-40% of remaining even-coord walls
+        # This creates the dense interconnected feel of Tomb of the Mask
+        wall_candidates = [(c, r) for r in range(1, H-1) for c in range(1, W-1)
+                           if g[r][c] == 0]
+        random.shuffle(wall_candidates)
+        # Open ~30% of internal walls to create loops
+        n_extra = len(wall_candidates) * 3 // 10
+        for c, r in wall_candidates[:n_extra]:
+            # Only open if it connects two open cells (creates a real shortcut)
+            neighbors_open = sum(
+                1 for dc, dr in [(1,0),(-1,0),(0,1),(0,-1)]
+                if 0 <= c+dc < W and 0 <= r+dr < H and g[r+dr][c+dc] == 1
+            )
+            if neighbors_open >= 2:
+                g[r][c] = 1
 
         return g
 
