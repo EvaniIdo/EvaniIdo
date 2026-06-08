@@ -78,18 +78,24 @@ def building_height(commits):
 def draw_sky(o, svg_w):
     o.append(f'<defs>'
              f'<linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">'
-             f'<stop offset="0%" stop-color="#070b19"/>'
-             f'<stop offset="60%" stop-color="#10172a"/>'
-             f'<stop offset="100%" stop-color="#1e1b4b"/>'
+             f'<stop offset="0%" stop-color="var(--sky-top)"/>'
+             f'<stop offset="100%" stop-color="var(--sky-bottom)"/>'
              f'</linearGradient>'
+             f'<filter id="sunGlow"><feGaussianBlur stdDeviation="6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+             f'<filter id="moonGlow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
              f'</defs>')
     o.append(f'<rect width="{svg_w}" height="{H}" fill="url(#skyGrad)"/>')
-    # estrelas
+    # Sol e Lua
+    o.append(f'<circle cx="120" cy="80" r="22" fill="#f59e0b" opacity="var(--sun-opacity)" filter="url(#sunGlow)"/>')
+    o.append(f'<path d="M 120 70 A 15 15 0 1 0 135 85 A 12 12 0 1 1 120 70" fill="#e2e8f0" opacity="var(--moon-opacity)" filter="url(#moonGlow)"/>')
+    # estrelas agrupadas
+    o.append(f'<g opacity="var(--stars-opacity)">')
     rng = random.Random(42)
     for _ in range(90):
         sx, sy = rng.randint(0, svg_w), rng.randint(0, GROUND_Y - 20)
         op, r = round(rng.uniform(0.2, 0.9), 2), round(rng.uniform(0.5, 1.5), 1)
         o.append(f'<circle cx="{sx}" cy="{sy}" r="{r}" fill="#ffffff" opacity="{op}"/>')
+    o.append(f'</g>')
 
 def draw_street(o, svg_w):
     # calçada
@@ -127,6 +133,8 @@ def draw_road_lamp(o, x):
     o.append(f'<line x1="{lx}" y1="{GROUND_Y}" x2="{lx}" y2="{GROUND_Y-24}" stroke="#64748b" stroke-width="1.5"/>')
     o.append(f'<path d="M {lx} {GROUND_Y-24} Q {lx+5} {GROUND_Y-26} {lx+8} {GROUND_Y-22}" fill="none" stroke="#64748b" stroke-width="1.5"/>')
     o.append(f'<circle cx="{lx+8}" cy="{GROUND_Y-21}" r="2" fill="#fef08a"/>')
+    # cone de luz à noite
+    o.append(f'<polygon points="{lx+8},{GROUND_Y-20} {lx-4},{GROUND_Y} {lx+20},{GROUND_Y}" fill="#fef08a" opacity="var(--street-lamp-glow)" style="mix-blend-mode: screen;"/>')
 
 def draw_detailed_building(o, x, commits, day_seed):
     h = building_height(commits)
@@ -160,10 +168,11 @@ def draw_detailed_building(o, x, commits, day_seed):
     
     # Portas
     o.append(f'<rect x="{x+w//2-3}" y="{GROUND_Y-8}" width="6" height="8" fill="#1e293b"/>')
-    o.append(f'<rect x="{x+w//2-2}" y="{GROUND_Y-7}" width="2" height="7" fill="#fef08a" opacity="0.8"/>')
+    o.append(f'<rect x="{x+w//2-2}" y="{GROUND_Y-7}" width="2" height="7" fill="var(--window-glow)" opacity="var(--window-glow-op)"/>')
     
     # Janelas
-    win_color = "#fef08a"
+    win_color = "var(--window-glow)"
+    win_opacity = "var(--window-glow-op)"
     rng = random.Random(day_seed + 100)
     
     if style == 0:
@@ -176,7 +185,7 @@ def draw_detailed_building(o, x, commits, day_seed):
                 if rng.random() < 0.75:
                     wx = x + 3 + c * 7
                     wy = y + 8 + r * 9
-                    o.append(f'<rect x="{wx}" y="{wy}" width="{ww}" height="{wh}" fill="{win_color}" opacity="0.9"/>')
+                    o.append(f'<rect x="{wx}" y="{wy}" width="{ww}" height="{wh}" fill="{win_color}" opacity="{win_opacity}"/>')
         # antena/espira
         o.append(f'<line x1="{x+w//2}" y1="{y}" x2="{x+w//2}" y2="{y-15}" stroke="#94a3b8" stroke-width="1.5"/>')
         o.append(f'<circle cx="{x+w//2}" cy="{y-15}" r="2" fill="#ef4444"/>')
@@ -192,7 +201,7 @@ def draw_detailed_building(o, x, commits, day_seed):
                     wx = x + 4 + c * 11
                     wy = y + 8 + r * 11
                     # arco
-                    o.append(f'<path d="M {wx} {wy+wh} L {wx} {wy+3} A {ww/2} {ww/2} 0 0 1 {wx+ww} {wy+3} L {wx+ww} {wy+wh} Z" fill="{win_color}" opacity="0.9"/>')
+                    o.append(f'<path d="M {wx} {wy+wh} L {wx} {wy+3} A {ww/2} {ww/2} 0 0 1 {wx+ww} {wy+3} L {wx+ww} {wy+wh} Z" fill="{win_color}" opacity="{win_opacity}"/>')
         # Telhado triangular
         o.append(f'<polygon points="{x-2},{y} {x+w//2},{y-10} {x+w+2},{y}" fill="{colors[1]}" stroke="#1e293b" stroke-width="1"/>')
         
@@ -206,7 +215,7 @@ def draw_detailed_building(o, x, commits, day_seed):
                 if rng.random() < 0.7:
                     wx = x + 4 + c * 10
                     wy = y + 8 + r * 13
-                    o.append(f'<rect x="{wx}" y="{wy}" width="{ww}" height="{wh}" fill="{win_color}" opacity="0.95"/>')
+                    o.append(f'<rect x="{wx}" y="{wy}" width="{ww}" height="{wh}" fill="{win_color}" opacity="{win_opacity}"/>')
                     o.append(f'<line x1="{wx}" y1="{wy+wh//2}" x2="{wx+ww}" y2="{wy+wh//2}" stroke="{colors[2]}" stroke-width="0.5"/>')
         # Caixa d'água no telhado
         o.append(f'<rect x="{x+4}" y="{y-8}" width="8" height="8" fill="#64748b" rx="1"/>')
@@ -223,7 +232,7 @@ def draw_detailed_building(o, x, commits, day_seed):
                 wx = x + 4 + c * 11
                 wy = y + 8 + r * 14
                 if rng.random() < 0.8:
-                    o.append(f'<rect x="{wx}" y="{wy}" width="{ww}" height="{wh}" fill="{win_color}" opacity="0.9"/>')
+                    o.append(f'<rect x="{wx}" y="{wy}" width="{ww}" height="{wh}" fill="{win_color}" opacity="{win_opacity}"/>')
                 # borda da sacada
                 o.append(f'<rect x="{wx-1}" y="{wy+wh}" width="{ww+2}" height="2" fill="#cbd5e1"/>')
         # Telhado em cúpula
@@ -237,10 +246,104 @@ def generate_svg(year, month, counts):
     svg_w = ML * 2 + last_day * (LOT_W + GAP) - GAP
     svg_w = max(W, svg_w)
     
+    # Determina o tema padrão baseado no horário atual de Fortaleza/CE (UTC-3)
+    utc_now = datetime.datetime.now(datetime.timezone.utc)
+    br_now = utc_now - datetime.timedelta(hours=3)
+    current_hour = br_now.hour
+    is_daytime = 6 <= current_hour < 18
+    
+    if is_daytime:
+        default_theme = """
+    :root {
+      --sky-top: #7dd3fc;
+      --sky-bottom: #e0f2fe;
+      --stars-opacity: 0;
+      --sun-opacity: 1;
+      --moon-opacity: 0;
+      --window-glow: #ffffff;
+      --window-glow-op: 0.3;
+      --bird-opacity: 1;
+      --plane-opacity: 0;
+      --street-lamp-glow: 0;
+      --car-headlight-glow: 0;
+    }
+"""
+    else:
+        default_theme = """
+    :root {
+      --sky-top: #070b19;
+      --sky-bottom: #1e1b4b;
+      --stars-opacity: 0.85;
+      --sun-opacity: 0;
+      --moon-opacity: 0.9;
+      --window-glow: #fef08a;
+      --window-glow-op: 0.95;
+      --bird-opacity: 0;
+      --plane-opacity: 1;
+      --street-lamp-glow: 0.8;
+      --car-headlight-glow: 0.6;
+    }
+"""
+
+    css_rules = f"""  <style>
+    {default_theme}
+    @media (prefers-color-scheme: dark) {{
+      :root {{
+        --sky-top: #070b19;
+        --sky-bottom: #1e1b4b;
+        --stars-opacity: 0.85;
+        --sun-opacity: 0;
+        --moon-opacity: 0.9;
+        --window-glow: #fef08a;
+        --window-glow-op: 0.95;
+        --bird-opacity: 0;
+        --plane-opacity: 1;
+        --street-lamp-glow: 0.8;
+        --car-headlight-glow: 0.6;
+      }}
+    }}
+    @media (prefers-color-scheme: light) {{
+      :root {{
+        --sky-top: #7dd3fc;
+        --sky-bottom: #e0f2fe;
+        --stars-opacity: 0;
+        --sun-opacity: 1;
+        --moon-opacity: 0;
+        --window-glow: #ffffff;
+        --window-glow-op: 0.3;
+        --bird-opacity: 1;
+        --plane-opacity: 0;
+        --street-lamp-glow: 0;
+        --car-headlight-glow: 0;
+      }}
+    }}
+  </style>"""
+
     o = []
     o.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{svg_w}" height="{H}" viewBox="0 0 {svg_w} {H}">')
+    o.append(css_rules)
     
     draw_sky(o, svg_w)
+    
+    # Passaros (dia) e Avioes (noite)
+    o.append(f'<g opacity="var(--bird-opacity)">')
+    o.append(f'  <path d="M 0 0 Q 3 -5 6 0 Q 9 -5 12 0 Q 9 -2 6 -1 Q 3 -2 0 0 Z" fill="#334155">')
+    o.append(f'    <animateTransform attributeName="transform" type="translate" from="-40 80" to="{svg_w + 40} 60" dur="15s" repeatCount="indefinite"/>')
+    o.append(f'  </path>')
+    o.append(f'  <path d="M 0 0 Q 3 -5 6 0 Q 9 -5 12 0 Q 9 -2 6 -1 Q 3 -2 0 0 Z" fill="#334155">')
+    o.append(f'    <animateTransform attributeName="transform" type="translate" from="-150 120" to="{svg_w + 40} 100" dur="18s" repeatCount="indefinite"/>')
+    o.append(f'  </path>')
+    o.append(f'</g>')
+    o.append(f'<g opacity="var(--plane-opacity)">')
+    o.append(f'  <animateTransform attributeName="transform" type="translate" from="-120 40" to="{svg_w + 120} 45" dur="14s" repeatCount="indefinite"/>')
+    o.append(f'  <path d="M 0 0 L 15 -2 L 20 -7 L 23 -7 L 21 -2 L 35 -2 L 37 -4 L 39 -4 L 38 1 L 18 1 L 16 4 L 13 4 L 14 1 L 0 0 Z" fill="#94a3b8"/>')
+    o.append(f'  <circle cx="38" cy="-4" r="1.5" fill="#ef4444">')
+    o.append(f'    <animate attributeName="opacity" values="0;1;0" dur="0.8s" repeatCount="indefinite"/>')
+    o.append(f'  </circle>')
+    o.append(f'  <circle cx="21" cy="-7" r="1.5" fill="#22c55e">')
+    o.append(f'    <animate attributeName="opacity" values="0;1;0" dur="1s" repeatCount="indefinite"/>')
+    o.append(f'  </circle>')
+    o.append(f'</g>')
     
     # Título
     o.append(f'<text x="{svg_w//2}" y="32" text-anchor="middle" font-size="16" fill="#f8fafc" font-family="{FONT}" font-weight="bold">&#x1F3D9;&#xFE0F; GitHub City Skyline — {mname}</text>')
@@ -291,6 +394,104 @@ def generate_svg(year, month, counts):
             o.append(f'<polygon points="{x+LOT_W//2-4},{GROUND_Y+25} {x+LOT_W//2+4},{GROUND_Y+25} {x+LOT_W//2},{GROUND_Y+30}" fill="#f59e0b"/>')
 
         o.append(f'</g>')
+
+    # Desenha Pessoas no calçadão (em cima dos prédios)
+    o.append(f'<!-- Pessoas andando -->')
+    o.append(f'<g>')
+    # Person 1
+    o.append(f'  <g>')
+    o.append(f'    <animateTransform attributeName="transform" type="translate" from="{svg_w + 20} {GROUND_Y + 4}" to="-20 {GROUND_Y + 4}" dur="25s" repeatCount="indefinite"/>')
+    o.append(f'    <circle cx="0" cy="-6" r="1.8" fill="#ec4899"/>')
+    o.append(f'    <line x1="0" y1="-4.2" x2="0" y2="-1" stroke="#ec4899" stroke-width="1.6"/>')
+    o.append(f'    <line x1="0" y1="-1" x2="-1.2" y2="2" stroke="#ec4899" stroke-width="1.2">')
+    o.append(f'      <animateTransform attributeName="transform" type="rotate" values="15 0 -1; -15 0 -1; 15 0 -1" dur="0.6s" repeatCount="indefinite"/>')
+    o.append(f'    </line>')
+    o.append(f'    <line x1="0" y1="-1" x2="1.2" y2="2" stroke="#ec4899" stroke-width="1.2">')
+    o.append(f'      <animateTransform attributeName="transform" type="rotate" values="-15 0 -1; 15 0 -1; -15 0 -1" dur="0.6s" repeatCount="indefinite"/>')
+    o.append(f'    </line>')
+    o.append(f'  </g>')
+    # Person 2
+    o.append(f'  <g>')
+    o.append(f'    <animateTransform attributeName="transform" type="translate" from="-100 {GROUND_Y + 4}" to="{svg_w + 20} {GROUND_Y + 4}" dur="22s" repeatCount="indefinite"/>')
+    o.append(f'    <circle cx="0" cy="-6" r="1.8" fill="#14b8a6"/>')
+    o.append(f'    <line x1="0" y1="-4.2" x2="0" y2="-1" stroke="#14b8a6" stroke-width="1.6"/>')
+    o.append(f'    <line x1="0" y1="-1" x2="-1.2" y2="2" stroke="#14b8a6" stroke-width="1.2">')
+    o.append(f'      <animateTransform attributeName="transform" type="rotate" values="15 0 -1; -15 0 -1; 15 0 -1" dur="0.5s" repeatCount="indefinite"/>')
+    o.append(f'    </line>')
+    o.append(f'    <line x1="0" y1="-1" x2="1.2" y2="2" stroke="#14b8a6" stroke-width="1.2">')
+    o.append(f'      <animateTransform attributeName="transform" type="rotate" values="-15 0 -1; 15 0 -1; -15 0 -1" dur="0.5s" repeatCount="indefinite"/>')
+    o.append(f'    </line>')
+    o.append(f'  </g>')
+    # Person 3
+    o.append(f'  <g>')
+    o.append(f'    <animateTransform attributeName="transform" type="translate" from="{svg_w + 120} {GROUND_Y + 4}" to="-20 {GROUND_Y + 4}" dur="28s" repeatCount="indefinite"/>')
+    o.append(f'    <circle cx="0" cy="-6" r="1.8" fill="#a855f7"/>')
+    o.append(f'    <line x1="0" y1="-4.2" x2="0" y2="-1" stroke="#a855f7" stroke-width="1.6"/>')
+    o.append(f'    <line x1="0" y1="-1" x2="-1.2" y2="2" stroke="#a855f7" stroke-width="1.2">')
+    o.append(f'      <animateTransform attributeName="transform" type="rotate" values="15 0 -1; -15 0 -1; 15 0 -1" dur="0.7s" repeatCount="indefinite"/>')
+    o.append(f'    </line>')
+    o.append(f'    <line x1="0" y1="-1" x2="1.2" y2="2" stroke="#a855f7" stroke-width="1.2">')
+    o.append(f'      <animateTransform attributeName="transform" type="rotate" values="-15 0 -1; 15 0 -1; -15 0 -1" dur="0.7s" repeatCount="indefinite"/>')
+    o.append(f'    </line>')
+    o.append(f'  </g>')
+    # Person 4
+    o.append(f'  <g>')
+    o.append(f'    <animateTransform attributeName="transform" type="translate" from="-220 {GROUND_Y + 4}" to="{svg_w + 20} {GROUND_Y + 4}" dur="26s" repeatCount="indefinite"/>')
+    o.append(f'    <circle cx="0" cy="-6" r="1.8" fill="#f97316"/>')
+    o.append(f'    <line x1="0" y1="-4.2" x2="0" y2="-1" stroke="#f97316" stroke-width="1.6"/>')
+    o.append(f'    <line x1="0" y1="-1" x2="-1.2" y2="2" stroke="#f97316" stroke-width="1.2">')
+    o.append(f'      <animateTransform attributeName="transform" type="rotate" values="15 0 -1; -15 0 -1; 15 0 -1" dur="0.6s" repeatCount="indefinite"/>')
+    o.append(f'    </line>')
+    o.append(f'    <line x1="0" y1="-1" x2="1.2" y2="2" stroke="#f97316" stroke-width="1.2">')
+    o.append(f'      <animateTransform attributeName="transform" type="rotate" values="-15 0 -1; 15 0 -1; -15 0 -1" dur="0.6s" repeatCount="indefinite"/>')
+    o.append(f'    </line>')
+    o.append(f'  </g>')
+    o.append(f'</g>')
+    
+    # Desenha Carros na pista (em cima da calçada)
+    o.append(f'<!-- Carros -->')
+    o.append(f'<g>')
+    # Car 1
+    o.append(f'  <g>')
+    o.append(f'    <animateTransform attributeName="transform" type="translate" from="{svg_w + 30} {GROUND_Y + 10}" to="-30 {GROUND_Y + 10}" dur="12s" repeatCount="indefinite"/>')
+    o.append(f'    <rect x="-11" y="0" width="22" height="7" fill="#ef4444" rx="1.5"/>')
+    o.append(f'    <path d="M -7 0 L -4 -4 L 4 -4 L 7 0 Z" fill="#ef4444"/>')
+    o.append(f'    <path d="M -5 0 L -3 -3 L 3 -3 L 5 0 Z" fill="#e2e8f0" opacity="0.75"/>')
+    o.append(f'    <circle cx="-5" cy="7" r="2.5" fill="#0f172a"/>')
+    o.append(f'    <circle cx="5" cy="7" r="2.5" fill="#0f172a"/>')
+    o.append(f'    <polygon points="-11,2 -26,0 -26,6 -11,5" fill="#fef08a" opacity="var(--car-headlight-glow)"/>')
+    o.append(f'  </g>')
+    # Car 2
+    o.append(f'  <g>')
+    o.append(f'    <animateTransform attributeName="transform" type="translate" from="-150 {GROUND_Y + 21}" to="{svg_w + 30} {GROUND_Y + 21}" dur="10s" repeatCount="indefinite"/>')
+    o.append(f'    <rect x="-11" y="0" width="22" height="7" fill="#3b82f6" rx="1.5"/>')
+    o.append(f'    <path d="M -7 0 L -4 -4 L 4 -4 L 7 0 Z" fill="#3b82f6"/>')
+    o.append(f'    <path d="M -5 0 L -3 -3 L 3 -3 L 5 0 Z" fill="#e2e8f0" opacity="0.75"/>')
+    o.append(f'    <circle cx="-5" cy="7" r="2.5" fill="#0f172a"/>')
+    o.append(f'    <circle cx="5" cy="7" r="2.5" fill="#0f172a"/>')
+    o.append(f'    <polygon points="11,2 26,0 26,6 11,5" fill="#fef08a" opacity="var(--car-headlight-glow)"/>')
+    o.append(f'  </g>')
+    # Car 3
+    o.append(f'  <g>')
+    o.append(f'    <animateTransform attributeName="transform" type="translate" from="{svg_w + 250} {GROUND_Y + 10}" to="-30 {GROUND_Y + 10}" dur="14s" repeatCount="indefinite"/>')
+    o.append(f'    <rect x="-11" y="0" width="22" height="7" fill="#f59e0b" rx="1.5"/>')
+    o.append(f'    <path d="M -7 0 L -4 -4 L 4 -4 L 7 0 Z" fill="#f59e0b"/>')
+    o.append(f'    <path d="M -5 0 L -3 -3 L 3 -3 L 5 0 Z" fill="#e2e8f0" opacity="0.75"/>')
+    o.append(f'    <circle cx="-5" cy="7" r="2.5" fill="#0f172a"/>')
+    o.append(f'    <circle cx="5" cy="7" r="2.5" fill="#0f172a"/>')
+    o.append(f'    <polygon points="-11,2 -26,0 -26,6 -11,5" fill="#fef08a" opacity="var(--car-headlight-glow)"/>')
+    o.append(f'  </g>')
+    # Car 4
+    o.append(f'  <g>')
+    o.append(f'    <animateTransform attributeName="transform" type="translate" from="-400 {GROUND_Y + 21}" to="{svg_w + 30} {GROUND_Y + 21}" dur="13s" repeatCount="indefinite"/>')
+    o.append(f'    <rect x="-11" y="0" width="22" height="7" fill="#10b981" rx="1.5"/>')
+    o.append(f'    <path d="M -7 0 L -4 -4 L 4 -4 L 7 0 Z" fill="#10b981"/>')
+    o.append(f'    <path d="M -5 0 L -3 -3 L 3 -3 L 5 0 Z" fill="#e2e8f0" opacity="0.75"/>')
+    o.append(f'    <circle cx="-5" cy="7" r="2.5" fill="#0f172a"/>')
+    o.append(f'    <circle cx="5" cy="7" r="2.5" fill="#0f172a"/>')
+    o.append(f'    <polygon points="11,2 26,0 26,6 11,5" fill="#fef08a" opacity="var(--car-headlight-glow)"/>')
+    o.append(f'  </g>')
+    o.append(f'</g>')
     
     # Legenda
     ly = H - 16
