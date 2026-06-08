@@ -585,7 +585,7 @@ def generate_tomb_svg():
     COLS = 9
     ROWS = 13
 
-    # ── Slide physics ────────────────────────────────────────────────────────
+    # ── Física do Deslizamento ───────────────────────────────────────────────
     def slide_dest(grid, cx, cy, dx, dy):
         tx, ty = cx, cy
         while True:
@@ -598,7 +598,7 @@ def generate_tomb_svg():
         return tx, ty
 
     def slide_cells(cx, cy, tx, ty):
-        """All cells crossed (not including start) when sliding from (cx,cy) to (tx,ty)."""
+        """Células percorridas ao deslizar de (cx,cy) até (tx,ty)."""
         dx = 0 if tx == cx else (1 if tx > cx else -1)
         dy = 0 if ty == cy else (1 if ty > cy else -1)
         cells, x, y = [], cx, cy
@@ -607,11 +607,11 @@ def generate_tomb_svg():
             cells.append((x, y))
         return cells
 
-    # ── Build full slide graph from a starting cell ───────────────────────────
+    # ── Conectividade de slides a partir de um ponto ──────────────────────────
     def build_slide_graph(grid, start_x, start_y):
         queue = [(start_x, start_y)]
         dps = {(start_x, start_y)}
-        adj = {}          # dp -> list of (dest_dp, [cells crossed])
+        adj = {}          # ponto -> lista de (destino, [células percorridas])
         while queue:
             cx, cy = queue.pop(0)
             adj[(cx, cy)] = []
@@ -624,12 +624,12 @@ def generate_tomb_svg():
                         queue.append((tx, ty))
         return dps, adj
 
-    # ── Check every dp can reach every other dp (strong connectivity) ─────────
+    # ── Verifica conectividade forte (todo ponto alcança todos os outros) ─────
     def is_strongly_connected(adj, dps):
         if len(dps) < 2:
             return True
         start = next(iter(dps))
-        # forward BFS
+        # BFS para frente
         seen = {start}
         q = [start]
         while q:
@@ -639,7 +639,7 @@ def generate_tomb_svg():
                     seen.add(dest); q.append(dest)
         if seen != dps:
             return False
-        # reverse BFS (follow edges backwards)
+        # BFS reverso (segui caminhos de volta)
         rev = {dp: [] for dp in dps}
         for src, edges in adj.items():
             for dest, cells in edges:
@@ -653,13 +653,12 @@ def generate_tomb_svg():
                     seen2.add(prev); q.append(prev)
         return seen2 == dps
 
-    # ── Prim's maze carving (dense Tomb-of-the-Mask style) ───────────────────
+    # ── Labirinto de Prim (estilo Tomb of the Mask) ──────────────────────────
     def carve_maze():
         W, H = COLS, ROWS
-        # Start all walls
         g = [[0]*W for _ in range(H)]
 
-        # Room cells sit at odd coords; corridor cells at mixed even/odd
+        # Células de sala ficam em coordenadas ímpares
         room_cells = [(c, r) for r in range(1, H, 2) for c in range(1, W, 2)]
 
         in_maze = set()
@@ -687,8 +686,7 @@ def generate_tomb_svg():
             g[wall[1]][wall[0]] = 1
             add_frontiers(nxt)
 
-        # Add extra loops: open ~12% of remaining internal walls to create
-        # just enough shortcuts for rich slide connectivity without opening everything
+        # Adiciona loops extras (~12% das paredes internas remanescentes)
         wall_candidates = [(c, r) for r in range(1, H-1) for c in range(1, W-1)
                            if g[r][c] == 0]
         random.shuffle(wall_candidates)
@@ -697,7 +695,6 @@ def generate_tomb_svg():
         for c, r in wall_candidates:
             if opened >= n_extra:
                 break
-            # Only open if it connects two already-open cells
             neighbors_open = sum(
                 1 for dc, dr in [(1,0),(-1,0),(0,1),(0,-1)]
                 if 0 <= c+dc < W and 0 <= r+dr < H and g[r+dr][c+dc] == 1
@@ -708,10 +705,10 @@ def generate_tomb_svg():
 
         return g
 
-    # ── Greedy BFS solver: collect all coins via slides ───────────────────────
+    # ── Solucionador de moedas via BFS ──────────────────────────────────────
     def solve(grid, start, adj):
         dps, _ = build_slide_graph(grid, start[0], start[1])
-        # All passable cells (excluding start) get coins
+        # Todas as células transitáveis ganham moedas
         all_coins = set()
         for src, edges in adj.items():
             for dest, cells in edges:
@@ -723,7 +720,7 @@ def generate_tomb_svg():
         cur = start
 
         while coins:
-            # BFS over decision points to find nearest slide that crosses a coin
+            # BFS para encontrar o próximo slide com moedas
             queue = [(cur, [])]
             visited = {cur}
             found = None
@@ -740,7 +737,7 @@ def generate_tomb_svg():
                     break
             if not found:
                 break
-            # Trace the full path and erase coins
+            # Esvazia moedas ao longo do caminho
             for i in range(len(found) - 1):
                 p1, p2 = found[i], found[i+1]
                 for cell in slide_cells(p1[0], p1[1], p2[0], p2[1]):
@@ -750,11 +747,11 @@ def generate_tomb_svg():
 
         return path, all_coins
 
-    # ── Build one valid room ──────────────────────────────────────────────────
+    # ── Criação de sala válida ────────────────────────────────────────────────
     def build_room():
         for _ in range(200):
             grid = carve_maze()
-            # pick a random open inner cell as start
+            # Escolhe um ponto inicial aberto
             open_inner = [(c, r) for r in range(1, ROWS-1)
                            for c in range(1, COLS-1) if grid[r][c] == 1]
             if not open_inner:
@@ -765,12 +762,12 @@ def generate_tomb_svg():
                 continue
             if not is_strongly_connected(adj, dps):
                 continue
-            # Verify all passable cells are actually reachable and collectable
+            # Garante que todas as moedas são coletáveis
             path, coins = solve(grid, (sx, sy), adj)
             if len(coins) >= 20:
                 return grid, path, sx, sy, coins
 
-        # Absolute fallback: open corridor grid
+        # Fallback absoluto
         grid = [[0]*COLS for _ in range(ROWS)]
         for r in range(1, ROWS-1):
             for c in range(1, COLS-1):
