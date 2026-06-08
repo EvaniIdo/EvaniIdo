@@ -582,8 +582,8 @@ if (keys.length > 0) {{
 
 def generate_tomb_svg():
     TILE = 24
-    COLS = 13
-    ROWS = 13
+    COLS = 33
+    ROWS = 11
 
     # ── Física do Deslizamento ───────────────────────────────────────────────
     def slide_dest(grid, cx, cy, dx, dy):
@@ -749,7 +749,7 @@ def generate_tomb_svg():
 
     # ── Criação de sala válida ────────────────────────────────────────────────
     def build_room():
-        for _ in range(200):
+        for _ in range(300):
             grid = carve_maze()
             # Escolhe um ponto inicial aberto
             open_inner = [(c, r) for r in range(1, ROWS-1)
@@ -757,24 +757,52 @@ def generate_tomb_svg():
             if not open_inner:
                 continue
             sx, sy = random.choice(open_inner)
-            dps, adj = build_slide_graph(grid, sx, sy)
-            if len(dps) < 8:
-                continue
-            if not is_strongly_connected(adj, dps):
-                continue
-            # Garante que todas as moedas são coletáveis
-            path, coins = solve(grid, (sx, sy), adj)
-            if len(coins) >= 30:
-                return grid, path, sx, sy, coins
+            
+            valid = False
+            # Poda iterativa de células sem passagem (becos e cantos inacessíveis)
+            for _ in range(10):
+                dps, adj = build_slide_graph(grid, sx, sy)
+                if len(dps) < 10:
+                    break
+                if not is_strongly_connected(adj, dps):
+                    break
+                
+                # Células atravessadas por algum slide do grafo conexo
+                crossed = {(sx, sy)}
+                for src in dps:
+                    for dest, cells in adj.get(src, []):
+                        crossed.add(src)
+                        crossed.add(dest)
+                        crossed.update(cells)
+                
+                # Células abertas internas que nunca são atravessadas
+                dead_cells = []
+                for r in range(1, ROWS-1):
+                    for c in range(1, COLS-1):
+                        if grid[r][c] == 1 and (c, r) not in crossed:
+                            dead_cells.append((c, r))
+                
+                if not dead_cells:
+                    valid = True
+                    break
+                
+                # Transforma as células inacessíveis em paredes
+                for c, r in dead_cells:
+                    grid[r][c] = 0
+            
+            if valid:
+                path, coins = solve(grid, (sx, sy), adj)
+                if len(coins) >= 60:
+                    return grid, path, sx, sy, coins
 
-        # Fallback absoluto
+        # Fallback absoluto (totalmente livre de barreiras)
         grid = [[0]*COLS for _ in range(ROWS)]
         for r in range(1, ROWS-1):
             for c in range(1, COLS-1):
                 grid[r][c] = 1
-        dps, adj = build_slide_graph(grid, 6, 6)
-        path, coins = solve(grid, (6, 6), adj)
-        return grid, path, 6, 6, coins
+        dps, adj = build_slide_graph(grid, 16, 5)
+        path, coins = solve(grid, (16, 5), adj)
+        return grid, path, 16, 5, coins
 
     num_rooms = 3
     rooms = []
@@ -923,7 +951,7 @@ def generate_tomb_svg():
             styles.append(f"    #dot-{idx}-{dc}-{dr} {{ animation: {dot_kf_name} {total_duration:.2f}s infinite linear; transform-origin: {cx}px {cy}px; }}")
 
     svg = []
-    svg.append('<svg xmlns="http://www.w3.org/2000/svg" width="336" height="380" viewBox="0 0 336 380">')
+    svg.append('<svg xmlns="http://www.w3.org/2000/svg" width="830" height="332" viewBox="0 0 830 332">')
     svg.append('  <defs>')
     svg.append('    <linearGradient id="wallGrad" x1="0" y1="0" x2="1" y2="1">')
     svg.append('      <stop offset="0%" stop-color="#2d0b5a"/>')
@@ -937,7 +965,7 @@ def generate_tomb_svg():
     svg.append('      </feMerge>')
     svg.append('    </filter>')
     svg.append('    <clipPath id="gridClip">')
-    svg.append('      <rect x="0" y="0" width="312" height="312"/>')
+    svg.append('      <rect x="0" y="0" width="792" height="264"/>')
     svg.append('    </clipPath>')
     svg.append('  </defs>')
     
@@ -952,13 +980,13 @@ def generate_tomb_svg():
     svg.extend(keyframe_animations)
     svg.append('  </style>')
     
-    svg.append('  <rect width="336" height="380" fill="#08020d" rx="8" stroke="#7b2cbf" stroke-width="2"/>')
-    svg.append('  <rect x="2" y="2" width="332" height="44" fill="#140526" rx="6"/>')
-    svg.append('  <text x="168" y="24" text-anchor="middle" font-size="12" fill="#ffb703" font-family="monospace" font-weight="bold">🛡️ TOMB OF THE MASK</text>')
-    svg.append('  <text x="168" y="38" text-anchor="middle" font-size="8" fill="#00f5d4" font-family="monospace" font-weight="bold" class="pulse-text">🤖 AUTOPLAY BOT</text>')
+    svg.append('  <rect width="830" height="332" fill="#08020d" rx="8" stroke="#7b2cbf" stroke-width="2"/>')
+    svg.append('  <rect x="2" y="2" width="826" height="44" fill="#140526" rx="6"/>')
+    svg.append('  <text x="415" y="24" text-anchor="middle" font-size="12" fill="#ffb703" font-family="monospace" font-weight="bold">🛡️ TOMB OF THE MASK</text>')
+    svg.append('  <text x="415" y="38" text-anchor="middle" font-size="8" fill="#00f5d4" font-family="monospace" font-weight="bold" class="pulse-text">🤖 AUTOPLAY BOT</text>')
     
-    svg.append('  <g transform="translate(12, 48)">')
-    svg.append('    <rect width="312" height="312" fill="#0c0314" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
+    svg.append('  <g transform="translate(19, 48)">')
+    svg.append('    <rect width="792" height="264" fill="#0c0314" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
     
     for idx, r_data in enumerate(rooms):
         grid = r_data["grid"]
@@ -966,10 +994,10 @@ def generate_tomb_svg():
         svg.append('      <g stroke="#1b0e36" stroke-width="0.5" stroke-dasharray="1,5">')
         for c in range(1, COLS):
             x = c * TILE
-            svg.append(f'        <line x1="{x}" y1="0" x2="{x}" y2="312"/>')
+            svg.append(f'        <line x1="{x}" y1="0" x2="{x}" y2="264"/>')
         for r in range(1, ROWS):
             y = r * TILE
-            svg.append(f'        <line x1="0" y1="{y}" x2="312" y2="{y}"/>')
+            svg.append(f'        <line x1="0" y1="{y}" x2="792" y2="{y}"/>')
         svg.append('      </g>')
         
         for r in range(ROWS):
@@ -997,8 +1025,8 @@ def generate_tomb_svg():
         
     svg.append('  </g>')
     
-    svg.append('  <rect x="12" y="48" width="312" height="312" fill="none" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
-    svg.append('  <text x="168" y="372" text-anchor="middle" font-size="7" fill="#64748b" font-family="monospace">⚡ PROCEDURAL LEVEL SOLVER</text>')
+    svg.append('  <rect x="19" y="48" width="792" height="264" fill="none" stroke="#7b2cbf" stroke-width="2" rx="4"/>')
+    svg.append('  <text x="415" y="322" text-anchor="middle" font-size="7" fill="#64748b" font-family="monospace">⚡ PROCEDURAL LEVEL SOLVER</text>')
     svg.append('</svg>')
     
     return "\n".join(svg)

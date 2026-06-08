@@ -83,7 +83,7 @@
 > Um bot inteligente percorre labirintos procedurais de Tomb of the Mask subindo infinitamente em tempo real no meu perfil!
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/EvaniIdo/EvaniIdo/stats/tomb_v1.svg" alt="Tomb of the Mask Autoplay Bot" width="300" />
+  <img src="https://raw.githubusercontent.com/EvaniIdo/EvaniIdo/stats/tomb_v1.svg" alt="Tomb of the Mask Autoplay Bot" width="100%" />
 </div>
 
 ---
