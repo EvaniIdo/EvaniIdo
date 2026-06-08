@@ -815,30 +815,37 @@ def generate_tomb_svg():
             "coins": list(coins)
         })
         
-    room_duration = 12.0
-    total_duration = num_rooms * room_duration
-    
-    styles = []
-    keyframe_animations = []
-    
-    for idx, r_data in enumerate(rooms):
+    v = 10.0
+    pause = 0.12
+
+    # Pre-calcula a duração exata de cada sala para manter velocidade constante
+    room_durations = []
+    for r_data in rooms:
         path = r_data["path"]
-        grid = r_data["grid"]
-        start_x, start_y = r_data["start"]
-        
-        v = 10.0
-        pause = 0.12
-        
-        play_time = room_duration - 0.8
         raw_durations = []
         for i in range(len(path) - 1):
             x1, y1 = path[i]
             x2, y2 = path[i+1]
             d = abs(x2 - x1) + abs(y2 - y1)
             raw_durations.append(d / v + pause)
-            
         total_raw = sum(raw_durations) if raw_durations else 1.0
-        scale_t = play_time / total_raw
+        # 0.4s fade-in inicial + tempo do jogo + 0.8s fade-out/estático final
+        room_durations.append(0.4 + total_raw + 0.8)
+
+    total_duration = sum(room_durations)
+    
+    styles = []
+    keyframe_animations = []
+    
+    accumulated_time = 0.0
+    for idx, r_data in enumerate(rooms):
+        path = r_data["path"]
+        grid = r_data["grid"]
+        start_x, start_y = r_data["start"]
+        room_duration = room_durations[idx]
+        room_start_time = accumulated_time
+        room_end_time = accumulated_time + room_duration
+        accumulated_time += room_duration
         
         timeline = []
         cur_t = 0.4
@@ -853,8 +860,8 @@ def generate_tomb_svg():
             dy = y2 - y1
             d = abs(dx) + abs(dy)
             
-            slide_dur = (d / v) * scale_t
-            pause_dur = pause * scale_t
+            slide_dur = d / v
+            pause_dur = pause
             
             if x1 == x2:
                 step = 1 if y2 > y1 else -1
@@ -881,18 +888,18 @@ def generate_tomb_svg():
                 sq_x, sq_y = 1.2, 0.8
                 st_x, st_y = 0.95, 1.1
                 
-            timeline.append({"time": cur_t + 0.04 * scale_t, "x": x2, "y": y2, "scale": (sq_x, sq_y)})
-            timeline.append({"time": cur_t + 0.08 * scale_t, "x": x2, "y": y2, "scale": (st_x, st_y)})
+            timeline.append({"time": cur_t + 0.04, "x": x2, "y": y2, "scale": (sq_x, sq_y)})
+            timeline.append({"time": cur_t + 0.08, "x": x2, "y": y2, "scale": (st_x, st_y)})
             
             cur_t += pause_dur
             timeline.append({"time": cur_t, "x": x2, "y": y2, "scale": (1.0, 1.0)})
             
-        room_start_pct = (idx * room_duration / total_duration) * 100.0
-        room_end_pct = ((idx + 1) * room_duration / total_duration) * 100.0
+        room_start_pct = (room_start_time / total_duration) * 100.0
+        room_end_pct = (room_end_time / total_duration) * 100.0
         
         player_kf = []
         for step in timeline:
-            t_abs = idx * room_duration + step["time"]
+            t_abs = room_start_time + step["time"]
             pct = (t_abs / total_duration) * 100.0
             px = step["x"] * TILE + TILE / 2
             py = step["y"] * TILE + TILE / 2
@@ -930,7 +937,7 @@ def generate_tomb_svg():
         styles.append(f"    #room-{idx} {{ animation: {room_kf_name} {total_duration:.2f}s infinite linear; }}")
         
         for (dc, dr), t_c in dots_collected.items():
-            t_abs = idx * room_duration + t_c
+            t_abs = room_start_time + t_c
             pct = (t_abs / total_duration) * 100.0
             
             dot_kf_name = f"dot-anim-{idx}-{dc}-{dr}"
