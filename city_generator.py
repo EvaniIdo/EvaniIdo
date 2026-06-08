@@ -585,7 +585,7 @@ def generate_tomb_svg():
     COLS = 9
     ROWS = 13
 
-    def generate_room(wall_chance=0.22):
+    def generate_room(wall_chance=0.20):
         grid = [[1 for _ in range(COLS)] for _ in range(ROWS)]
         for r in range(ROWS):
             grid[r][0] = 0
@@ -641,6 +641,21 @@ def generate_tomb_svg():
                 
         return decision_points, passable_cells, slides_from
 
+    def make_fully_passable(grid, start_x, start_y):
+        while True:
+            open_cells = {(c, r) for r in range(1, ROWS - 1) for c in range(1, COLS - 1) if grid[r][c] != 0}
+            dps, passable, slides_from = analyze_slide_connectivity(grid, start_x, start_y)
+            passable_with_start = passable.union({(start_x, start_y)})
+            
+            unpassable = open_cells - passable_with_start
+            if not unpassable:
+                break
+                
+            for c, r in unpassable:
+                grid[r][c] = 0
+                
+        return grid
+
     def solve_room(grid, start_x, start_y):
         decision_points, passable_cells, slides_from = analyze_slide_connectivity(grid, start_x, start_y)
         if len(passable_cells) < 25:
@@ -686,9 +701,8 @@ def generate_tomb_svg():
                     tx += dx
                     ty += dy
                     coins.discard((tx, ty))
-                if found_path[i+1] not in path or i == len(found_path) - 2:
-                    path.append(found_path[i+1])
-                    
+                path.append((x2, y2))
+                
             current = found_path[-1]
             
         return path, passable_cells, decision_points
@@ -697,13 +711,14 @@ def generate_tomb_svg():
         attempts = 0
         while attempts < 1000:
             attempts += 1
-            grid = generate_room(0.22)
+            grid = generate_room(0.20)
             open_cells = [(c, r) for r in range(1, ROWS - 1) for c in range(1, COLS - 1) if grid[r][c] != 0]
             if not open_cells:
                 continue
             start_x, start_y = random.choice(open_cells)
+            grid = make_fully_passable(grid, start_x, start_y)
             path, coins, dps = solve_room(grid, start_x, start_y)
-            if path:
+            if path and len(coins) >= 30:
                 return grid, path, start_x, start_y, coins
                 
         grid = [[0]*COLS for _ in range(ROWS)]
