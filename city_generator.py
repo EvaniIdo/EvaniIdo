@@ -795,14 +795,18 @@ def generate_tomb_svg():
                 if len(coins) >= 60:
                     return grid, path, sx, sy, coins
 
-        # Fallback absoluto (totalmente livre de barreiras)
+        # Fallback absoluto (grid com pilares para permitir paradas e manter grafo conexo)
         grid = [[0]*COLS for _ in range(ROWS)]
         for r in range(1, ROWS-1):
             for c in range(1, COLS-1):
                 grid[r][c] = 1
-        dps, adj = build_slide_graph(grid, 16, 5)
-        path, coins = solve(grid, (16, 5), adj)
-        return grid, path, 16, 5, coins
+        # Adiciona pilares alternados para permitir paradas
+        for r in range(2, ROWS-2, 2):
+            for c in range(2, COLS-2, 2):
+                grid[r][c] = 0
+        dps, adj = build_slide_graph(grid, 1, 1)
+        path, coins = solve(grid, (1, 1), adj)
+        return grid, path, 1, 1, coins
 
     num_rooms = 3
     rooms = []
