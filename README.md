@@ -64,7 +64,7 @@
 
 ### 🏙️ GitHub City — Commits do Mês
 
-> Cada dia do mês vira um quarteirão da cidade. Quanto mais commits, maior o prédio. Dias futuros ficam como terrenos em construção.
+> Cada dia do mês vira um prédio da cidade. Quanto mais commits, maior o prédio. Dias futuros ficam como terrenos em construção.
 
 <div align="center">
   <a href="https://evaniido.github.io/EvaniIdo/" title="Ver cidade interativa com seletor de mês">
@@ -80,7 +80,7 @@
 
 ### 🤖 Tomb of the Mask — Autoplay Bot
 
-> Um bot inteligente percorre labirintos procedurais de Tomb of the Mask subindo infinitamente em tempo real no meu perfil!
+> Um bot inteligente que percorre labirintos procedurais, inspirado no Tomb of the Mask.
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/EvaniIdo/EvaniIdo/stats/tomb_v1.svg" alt="Tomb of the Mask Autoplay Bot" width="100%" />
