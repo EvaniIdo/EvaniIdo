@@ -1,6 +1,6 @@
 <div align="center">
   
-  # ⚡ Olá, eu sou o Marcus Vinicius
+  # ⚡ Olá, me chamo Marcus Vinicius
   
   ### **Analista de Dados & Gestão de Estoque**
   
