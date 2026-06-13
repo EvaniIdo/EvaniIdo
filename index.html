@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GitHub City Skyline</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #070b19; color: #f8fafc; font-family: monospace; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px; }
+h1 { font-size: 1.6rem; color: #f8fafc; margin-bottom: 20px; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.controls { display: flex; gap: 12px; align-items: center; margin-bottom: 24px; background: #0f172a; padding: 10px 20px; border-radius: 8px; border: 1px solid #1e293b; }
+label { color: #94a3b8; font-size: 0.95rem; }
+select { background: #1e293b; color: #f8fafc; border: 1px solid #475569; border-radius: 6px; padding: 8px 16px; font-family: monospace; font-size: 0.95rem; cursor: pointer; outline: none; }
+select:focus { border-color: #3b82f6; }
+.city-wrapper { width: 100%; max-width: 1000px; overflow-x: auto; background: #0f172a; border-radius: 12px; border: 1px solid #1e293b; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); padding: 15px; margin-bottom: 20px; }
+.city-wrapper::-webkit-scrollbar { height: 8px; }
+.city-wrapper::-webkit-scrollbar-track { background: #0f172a; }
+.city-wrapper::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+.city-wrapper::-webkit-scrollbar-thumb:hover { background: #475569; }
+</style>
+</head>
+<body>
+<h1>&#x1F3D9;&#xFE0F; GitHub City Skyline</h1>
+<div class="controls">
+  <label for="sel">Mês Selecionado:</label>
+  <select id="sel"></select>
+</div>
+<div class="city-wrapper" id="container"></div>
+<script>
+const DATA = {"2026-06": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 24, "8": 16, "9": 2, "10": 0, "11": 0, "12": 0, "13": 0, "14": 0, "15": 0, "16": 0, "17": 0, "18": 0, "19": 0, "20": 0, "21": 0, "22": 0, "23": 0, "24": 0, "25": 0, "26": 0, "27": 0, "28": 0, "29": 0, "30": 0}, "2026-05": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0, "11": 0, "12": 0, "13": 0, "14": 0, "15": 0, "16": 0, "17": 0, "18": 0, "19": 0, "20": 0, "21": 0, "22": 0, "23": 0, "24": 0, "25": 0, "26": 0, "27": 0, "28": 0, "29": 0, "30": 0, "31": 0}, "2026-04": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0, "11": 0, "12": 0, "13": 0, "14": 0, "15": 0, "16": 0, "17": 0, "18": 0, "19": 0, "20": 0, "21": 0, "22": 0, "23": 0, "24": 0, "25": 0, "26": 0, "27": 0, "28": 0, "29": 0, "30": 0}, "2026-03": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0, "11": 0, "12": 0, "13": 0, "14": 0, "15": 0, "16": 0, "17": 0, "18": 0, "19": 0, "20": 0, "21": 0, "22": 0, "23": 0, "24": 0, "25": 0, "26": 0, "27": 0, "28": 0, "29": 0, "30": 0, "31": 0}, "2026-02": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0, "11": 0, "12": 0, "13": 0, "14": 0, "15": 0, "16": 0, "17": 0, "18": 0, "19": 0, "20": 0, "21": 0, "22": 0, "23": 0, "24": 0, "25": 0, "26": 0, "27": 0, "28": 0}, "2026-01": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0, "10": 0, "11": 0, "12": 0, "13": 0, "14": 0, "15": 0, "16": 0, "17": 0, "18": 0, "19": 0, "20": 0, "21": 0, "22": 0, "23": 0, "24": 0, "25": 0, "26": 0, "27": 0, "28": 0, "29": 0, "30": 0, "31": 0}};
+
+function adjustColor(hex, amount) {
+    hex = hex.replace('#', '');
+    let r = parseInt(hex.substring(0, 2), 16) + amount;
+    let g = parseInt(hex.substring(2, 4), 16) + amount;
+    let b = parseInt(hex.substring(4, 6), 16) + amount;
+    r = Math.max(0, Math.min(255, r));
+    g = Math.max(0, Math.min(255, g));
+    b = Math.max(0, Math.min(255, b));
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+function render(yr, mo, counts) {
+    const lastDay = new Date(yr, mo, 0).getDate();
+    const today = new Date();
+    const mNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    const mname = mNames[mo-1] + " " + yr;
+    
+    const W = 980, GROUND_Y = 290, H = 360, LOT_W = 26, GAP = 4, ML = 20;
+    const svgW = Math.max(W, ML * 2 + lastDay * (LOT_W + GAP) - GAP);
+    
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${H}" viewBox="0 0 ${svgW} ${H}">`;
+    
+    // Céu
+    svg += `<defs>
+      <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#070b19"/>
+        <stop offset="60%" stop-color="#10172a"/>
+        <stop offset="100%" stop-color="#1e1b4b"/>
+      </linearGradient>
+    </defs>`;
+    svg += `<rect width="${svgW}" height="${H}" fill="url(#skyGrad)"/>`;
+    
+    // Estrelas
+    let seed = 42;
+    function rng() {
+        let x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+    }
+    for(let i=0; i<90; i++) {
+        let sx = rng() * svgW, sy = rng() * (GROUND_Y - 20);
+        let op = 0.2 + rng() * 0.7, r = 0.5 + rng() * 1.0;
+        svg += `<circle cx="${sx}" cy="${sy}" r="${r}" fill="#ffffff" opacity="${op}"/>`;
+    }
+    
+    // Título
+    svg += `<text x="${svgW/2}" y="32" text-anchor="middle" font-size="16" fill="#f8fafc" font-family="monospace" font-weight="bold">&#x1F3D9;&#xFE0F; GitHub City Skyline — ${mname}</text>`;
+    
+    // Calçada e Rua
+    svg += `<rect x="0" y="${GROUND_Y}" width="${svgW}" height="8" fill="#475569"/>`;
+    svg += `<rect x="0" y="${GROUND_Y+8}" width="${svgW}" height="28" fill="#1e293b"/>`;
+    svg += `<line x1="0" y1="${GROUND_Y+22}" x2="${svgW}" y2="${GROUND_Y+22}" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="12,12"/>`;
+    
+    for (let d = 1; d <= lastDay; d++) {
+        const x = ML + (d - 1) * (LOT_W + GAP);
+        const commits = counts[d] || 0;
+        const curDate = new Date(yr, mo - 1, d);
+        const tdToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const isToday = curDate.getTime() === tdToday.getTime();
+        const isFuture = curDate > tdToday;
+        const daySeed = (yr * 100 + mo) * 100 + d;
+        
+        // Início do grupo com tooltip de hover
+        svg += `<g>`;
+        svg += `<title>Dia ${d}: ${commits} ${commits === 1 ? 'commit' : 'commits'}</title>`;
+        
+        // Linha de Alinhamento
+        svg += `<line x1="${x + LOT_W/2}" y1="50" x2="${x + LOT_W/2}" y2="${GROUND_Y}" stroke="#334155" stroke-width="0.5" stroke-dasharray="2,4"/>`;
+        
+        if (isFuture) {
+            // Andaimes de construção
+            svg += `<rect x="${x}" y="${GROUND_Y-40}" width="${LOT_W}" height="40" fill="none" stroke="#475569" stroke-width="1" stroke-dasharray="3,3" rx="1"/>`;
+            const mx = x + LOT_W / 2;
+            svg += `<line x1="${mx}" y1="${GROUND_Y-40}" x2="${mx}" y2="${GROUND_Y-52}" stroke="#64748b" stroke-width="1.5"/>`;
+            svg += `<line x1="${mx}" y1="${GROUND_Y-52}" x2="${mx+10}" y2="${GROUND_Y-52}" stroke="#64748b" stroke-width="1.5"/>`;
+        } else if (commits === 0) {
+            // Poste de luz
+            if (daySeed % 5 === 0) {
+                const lx = x + LOT_W / 2;
+                svg += `<line x1="${lx}" y1="${GROUND_Y}" x2="${lx}" y2="${GROUND_Y-24}" stroke="#64748b" stroke-width="1.5"/>`;
+                svg += `<path d="M ${lx} ${GROUND_Y-24} Q ${lx+5} ${GROUND_Y-26} ${lx+8} ${GROUND_Y-22}" fill="none" stroke="#64748b" stroke-width="1.5"/>`;
+                svg += `<circle cx="${lx+8}" cy="${GROUND_Y-21}" r="2" fill="#fef08a"/>`;
+            }
+        } else if (commits === 1) {
+            // Praça
+            svg += `<rect x="${x}" y="${GROUND_Y-6}" width="${LOT_W}" height="6" fill="#15803d" rx="1"/>`;
+            svg += `<rect x="${x+3}" y="${GROUND_Y-9}" width="6" height="3" fill="#b45309"/>`;
+            svg += `<line x1="${x+3}" y1="${GROUND_Y-9}" x2="${x+3}" y2="${GROUND_Y-6}" stroke="#78350f" stroke-width="1"/>`;
+            svg += `<line x1="${x+9}" y1="${GROUND_Y-9}" x2="${x+9}" y2="${GROUND_Y-6}" stroke="#78350f" stroke-width="1"/>`;
+            svg += `<rect x="${x+17}" y="${GROUND_Y-16}" width="2" height="10" fill="#78350f"/>`;
+            svg += `<circle cx="${x+18}" cy="${GROUND_Y-19}" r="7" fill="#16a34a"/>`;
+            svg += `<circle cx="${x+15}" cy="${GROUND_Y-22}" r="5" fill="#22c55e"/>`;
+        } else {
+            // Prédio
+            let h = commits <= 3 ? 60 : commits <= 6 ? 110 : commits <= 10 ? 160 : commits <= 15 ? 210 : 310;
+            const yPos = GROUND_Y - h;
+            const style = daySeed % 4;
+            const palettes = [
+                ["#3b82f6", "#2563eb", "#1d4ed8"],
+                ["#b45309", "#92400e", "#78350f"],
+                ["#8b5cf6", "#7c3aed", "#6d28d9"],
+                ["#0d9488", "#0f766e", "#115e59"]
+            ];
+            const colors = palettes[style];
+            
+            svg += `<defs>
+              <linearGradient id="grad_h_${daySeed}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="${colors[0]}"/>
+                <stop offset="100%" stop-color="${colors[2]}"/>
+              </linearGradient>
+            </defs>`;
+            svg += `<rect x="${x}" y="${yPos}" width="${LOT_W}" height="${h}" fill="url(#grad_h_${daySeed})" rx="1"/>`;
+            // Sombra lateral
+            svg += `<rect x="${x+LOT_W-4}" y="${yPos}" width="4" height="${h}" fill="#000000" opacity="0.2"/>`;
+            // Portas
+            svg += `<rect x="${x+LOT_W/2-3}" y="${GROUND_Y-8}" width="6" height="8" fill="#1e293b"/>`;
+            svg += `<rect x="${x+LOT_W/2-2}" y="${GROUND_Y-7}" width="2" height="7" fill="#fef08a" opacity="0.8"/>`;
+            
+            // Janelas
+            let winSeed = daySeed + 100;
+            function rngWin() {
+                let x = Math.sin(winSeed++) * 10000;
+                return x - Math.floor(x);
+            }
+            
+            if (style === 0) {
+                const cols = 3, rows = Math.max(1, Math.floor((h - 15) / 10));
+                for(let r=0; r<rows; r++) {
+                    for(let c=0; c<cols; c++) {
+                        if (rngWin() < 0.75) {
+                            svg += `<rect x="${x+3+c*7}" y="${yPos+8+r*9}" width="4" height="6" fill="#fef08a" opacity="0.9"/>`;
+                        }
+                    }
+                }
+                svg += `<line x1="${x+LOT_W/2}" y1="${yPos}" x2="${x+LOT_W/2}" y2="${yPos-15}" stroke="#94a3b8" stroke-width="1.5"/>`;
+                svg += `<circle cx="${x+LOT_W/2}" cy="${yPos-15}" r="2" fill="#ef4444"/>`;
+            } else if (style === 1) {
+                const cols = 2, rows = Math.max(1, Math.floor((h - 15) / 12));
+                for(let r=0; r<rows; r++) {
+                    for(let c=0; c<cols; c++) {
+                        if (rngWin() < 0.8) {
+                            let wx = x+4+c*11, wy = yPos+8+r*11;
+                            svg += `<path d="M ${wx} ${wy+8} L ${wx} ${wy+3} A 3 3 0 0 1 ${wx+6} ${wy+3} L ${wx+6} ${wy+8} Z" fill="#fef08a" opacity="0.9"/>`;
+                        }
+                    }
+                }
+                svg += `<polygon points="${x-2},${yPos} ${x+LOT_W/2},${yPos-10} ${x+LOT_W+2},${yPos}" fill="${colors[1]}" stroke="#1e293b" stroke-width="1"/>`;
+            } else if (style === 2) {
+                const cols = 2, rows = Math.max(1, Math.floor((h - 15) / 14));
+                for(let r=0; r<rows; r++) {
+                    for(let c=0; c<cols; c++) {
+                        if (rngWin() < 0.7) {
+                            let wx = x+4+c*10, wy = yPos+8+r*13;
+                            svg += `<rect x="${wx}" y="${wy}" width="8" height="10" fill="#fef08a" opacity="0.95"/>`;
+                            svg += `<line x1="${wx}" y1="${wy+5}" x2="${wx+8}" y2="${wy+5}" stroke="${colors[2]}" stroke-width="0.5"/>`;
+                        }
+                    }
+                }
+                svg += `<rect x="${x+4}" y="${yPos-8}" width="8" height="8" fill="#64748b" rx="1"/>`;
+                svg += `<line x1="${x+5}" y1="${yPos}" x2="${x+5}" y2="${yPos-8}" stroke="#475569" stroke-width="1"/>`;
+                svg += `<line x1="${x+11}" y1="${yPos}" x2="${x+11}" y2="${yPos-8}" stroke="#475569" stroke-width="1"/>`;
+            } else {
+                const cols = 2, rows = Math.max(1, Math.floor((h - 15) / 15));
+                for(let r=0; r<rows; r++) {
+                    for(let c=0; c<cols; c++) {
+                        let wx = x+4+c*11, wy = yPos+8+r*14;
+                        if (rngWin() < 0.8) {
+                            svg += `<rect x="${wx}" y="${wy}" width="6" height="8" fill="#fef08a" opacity="0.9"/>`;
+                        }
+                        svg += `<rect x="${wx-1}" y="${wy+8}" width="8" height="2" fill="#cbd5e1"/>`;
+                    }
+                }
+                svg += `<path d="M ${x+2} ${yPos} A ${LOT_W/2-2} ${LOT_W/2-2} 0 0 1 ${x+LOT_W-2} ${yPos} Z" fill="${colors[1]}"/>`;
+            }
+            
+            // Emblema de commits flutuante
+            const bWidth = 14, bHeight = 10;
+            const by = h >= 310 ? 42 : yPos - 16;
+            svg += `<rect x="${x + LOT_W/2 - bWidth/2}" y="${by}" width="${bWidth}" height="${bHeight}" fill="#f59e0b" rx="2"/>`;
+            svg += `<text x="${x + LOT_W/2}" y="${by + 8}" text-anchor="middle" font-size="8" fill="#0f172a" font-weight="bold" font-family="monospace">${commits}</text>`;
+        }
+        
+        // Etiqueta do Dia
+        let lblColor = isToday ? "#f59e0b" : "#94a3b8";
+        let fontW = isToday ? "bold" : "normal";
+        svg += `<text x="${x + LOT_W/2}" y="${GROUND_Y+20}" text-anchor="middle" font-size="10" fill="${lblColor}" font-weight="${fontW}" font-family="monospace">${d}</text>`;
+        
+        if (isToday) {
+            svg += `<polygon points="${x+LOT_W/2-4},${GROUND_Y+25} ${x+LOT_W/2+4},${GROUND_Y+25} ${x+LOT_W/2},${GROUND_Y+30}" fill="#f59e0b"/>`;
+        }
+        
+        svg += `</g>`;
+    }
+
+    
+    // Legenda
+    const ly = H - 16;
+    const legendItems = [
+        ["#1e293b", "0 commits"],
+        ["#16a34a", "1 commit (Praça)"],
+        ["#3b82f6", "2-3 commits"],
+        ["#8b5cf6", "4-6 commits"],
+        ["#0d9488", "7-10 commits"],
+        ["#f59e0b", "11+ commits"]
+    ];
+    let lx = ML;
+    legendItems.forEach(item => {
+        svg += `<rect x="${lx}" y="${ly-8}" width="10" height="8" fill="${item[0]}" rx="1" stroke="#475569" stroke-width="0.5"/>`;
+        svg += `<text x="${lx+14}" y="${ly-1}" font-size="9" fill="#94a3b8" font-family="monospace">${item[1]}</text>`;
+        lx += 145;
+    });
+    
+    svg += `</svg>`;
+    return svg;
+}
+
+const sel = document.getElementById("sel");
+const keys = Object.keys(DATA).sort().reverse();
+keys.forEach(k => {
+    const opt = document.createElement("option");
+    opt.value = k; opt.textContent = k;
+    sel.appendChild(opt);
+});
+
+sel.addEventListener("change", () => {
+    const [y, m] = sel.value.split("-").map(Number);
+    document.getElementById("container").innerHTML = render(y, m, DATA[sel.value] || {});
+});
+
+if (keys.length > 0) {
+    sel.value = keys[0];
+    sel.dispatchEvent(new Event("change"));
+}
+</script>
+</body>
+</html>
