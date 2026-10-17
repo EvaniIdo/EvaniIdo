@@ -84,16 +84,6 @@
 
 ---
 
-### 🤖 Caminhos Procedurais — Autoplay Bot
-
-> Um bot inteligente que percorre labirintos e caminhos procedurais em tempo real.
-
-<div align="center">
-  <img src="https://raw.githubusercontent.com/EvaniIdo/EvaniIdo/stats/caminhos_v3.svg" alt="Caminhos Procedurais — Autoplay Bot" width="100%" />
-</div>
-
----
-
 <div align="center">
   
   ### 📬 Contato & Conexões
