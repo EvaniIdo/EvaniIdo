@@ -1205,7 +1205,7 @@ def generate_procedural_paths_svg():
     
     svg.append('  <rect width="830" height="344" fill="#070b19" rx="10" stroke="#1e293b" stroke-width="1.5"/>')
     svg.append('  <rect x="1" y="1" width="828" height="42" fill="#0f172a" rx="9" stroke="#1e293b" stroke-width="0.5"/>')
-    svg.append('  <text x="30" y="27" font-size="13" fill="#f8fafc" font-family="monospace" font-weight="bold">&#x1F697; Caminhos Procedurais &mdash; Navega&#xE7;&#xE3;o Urbana</text>')
+    svg.append('  <text x="30" y="27" font-size="13" fill="#f8fafc" font-family="monospace" font-weight="bold">&#x1F697; Caminhos Procedurais &#8212; Navega&#xE7;&#xE3;o Urbana</text>')
     svg.append('  <rect x="660" y="14" width="140" height="20" rx="10" fill="#1e293b" stroke="#334155" stroke-width="0.8"/>')
     svg.append('  <circle cx="673" cy="24" r="3" fill="#10b981"/>')
     svg.append('  <text x="682" y="27" font-size="9" fill="#94a3b8" font-family="monospace">AUTOPLAY BOT</text>')
@@ -1268,7 +1268,7 @@ def generate_procedural_paths_svg():
     svg.append('  </g>')
     
     svg.append('  <rect x="19" y="48" width="792" height="264" fill="none" stroke="#1e293b" stroke-width="1.5" rx="4"/>')
-    svg.append('  <text x="415" y="331" text-anchor="middle" font-size="9" fill="#64748b" font-family="monospace">&#x1F3D9;&#xFE0F; Quarteir&#xF5;es Edificados &bull; &#x1F6E3;&#xFE0F; Malha Vi&#xE1;ria Procedural &bull; &#x1F4A1; Ilumina&#xE7;&#xE3;o Urbana</text>')
+    svg.append('  <text x="415" y="331" text-anchor="middle" font-size="9" fill="#64748b" font-family="monospace">&#x1F3D9;&#xFE0F; Quarteir&#xF5;es Edificados &#8226; &#x1F6E3;&#xFE0F; Malha Vi&#xE1;ria Procedural &#8226; &#x1F4A1; Ilumina&#xE7;&#xE3;o Urbana</text>')
     svg.append('</svg>')
     
     return "\n".join(svg)
