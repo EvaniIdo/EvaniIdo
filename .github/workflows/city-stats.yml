@@ -20,9 +20,15 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Restore previous stats cache
+        run: |
+          git fetch origin stats || true
+          mkdir -p dist
+          git show origin/stats:data.json > dist/data.json 2>/dev/null || true
+
       - name: Generate city SVG and interactive HTML
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT || secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           GITHUB_USER: EvaniIdo
         run: python city_generator.py
 
