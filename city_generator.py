@@ -1112,13 +1112,7 @@ def generate_procedural_paths_svg():
             px = step["x"] * TILE + TILE / 2
             py = step["y"] * TILE + TILE / 2
             sx, sy = step["scale"]
-            dir_x, dir_y = step["dir"]
-            rot = 0
-            if dir_x == 1: rot = 0
-            elif dir_x == -1: rot = 180
-            elif dir_y == 1: rot = 90
-            elif dir_y == -1: rot = 270
-            player_kf.append(f"      {pct:.2f}% {{ transform: translate({px}px, {py}px) rotate({rot}deg) scale({sx}, {sy}); opacity: 1; }}")
+            player_kf.append(f"      {pct:.2f}% {{ transform: translate({px}px, {py}px) scale({sx}, {sy}); opacity: 1; }}")
             
         player_kf_full = []
         if room_start_pct > 0:
@@ -1174,20 +1168,8 @@ def generate_procedural_paths_svg():
     svg = []
     svg.append('<svg xmlns="http://www.w3.org/2000/svg" width="830" height="344" viewBox="0 0 830 344">')
     svg.append('  <defs>')
-    svg.append('    <linearGradient id="buildingGrad" x1="0" y1="0" x2="0" y2="1">')
-    svg.append('      <stop offset="0%" stop-color="#1e293b"/>')
-    svg.append('      <stop offset="100%" stop-color="#0f172a"/>')
-    svg.append('    </linearGradient>')
-    svg.append('    <linearGradient id="parkGrad" x1="0" y1="0" x2="0" y2="1">')
-    svg.append('      <stop offset="0%" stop-color="#14532d"/>')
-    svg.append('      <stop offset="100%" stop-color="#052e16"/>')
-    svg.append('    </linearGradient>')
-    svg.append('    <linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">')
-    svg.append('      <stop offset="0%" stop-color="#1e3a8a"/>')
-    svg.append('      <stop offset="100%" stop-color="#0f172a"/>')
-    svg.append('    </linearGradient>')
-    svg.append('    <filter id="cityGlow" x="-50%" y="-50%" width="200%" height="200%">')
-    svg.append('      <feGaussianBlur stdDeviation="2.5" result="blur"/>')
+    svg.append('    <filter id="botGlow" x="-50%" y="-50%" width="200%" height="200%">')
+    svg.append('      <feGaussianBlur stdDeviation="2" result="blur"/>')
     svg.append('      <feMerge>')
     svg.append('        <feMergeNode in="blur"/>')
     svg.append('        <feMergeNode in="SourceGraphic"/>')
@@ -1205,25 +1187,17 @@ def generate_procedural_paths_svg():
     
     svg.append('  <rect width="830" height="344" fill="#070b19" rx="10" stroke="#1e293b" stroke-width="1.5"/>')
     svg.append('  <rect x="1" y="1" width="828" height="42" fill="#0f172a" rx="9" stroke="#1e293b" stroke-width="0.5"/>')
-    svg.append('  <text x="30" y="27" font-size="13" fill="#f8fafc" font-family="monospace" font-weight="bold">🚗 Caminhos Procedurais — Navegação Urbana</text>')
+    svg.append('  <text x="30" y="27" font-size="13" fill="#f8fafc" font-family="monospace" font-weight="bold">🤖 Caminhos Procedurais — Autoplay Bot</text>')
     svg.append('  <rect x="660" y="14" width="140" height="20" rx="10" fill="#1e293b" stroke="#334155" stroke-width="0.8"/>')
     svg.append('  <circle cx="673" cy="24" r="3" fill="#10b981"/>')
-    svg.append('  <text x="682" y="27" font-size="9" fill="#94a3b8" font-family="monospace">AUTOPLAY BOT</text>')
+    svg.append('  <text x="684" y="27" font-size="9" fill="#94a3b8" font-family="monospace">AUTOPLAY BOT</text>')
     
     svg.append('  <g transform="translate(19, 48)">')
-    svg.append('    <rect width="792" height="264" fill="#080d1a" stroke="#1e293b" stroke-width="1.5" rx="4"/>')
+    svg.append('    <rect width="792" height="264" fill="#070b14" stroke="#1e293b" stroke-width="1.5" rx="4"/>')
     
     for idx, r_data in enumerate(rooms):
         grid = r_data["grid"]
         svg.append(f'    <g id="room-{idx}" clip-path="url(#gridClip)">')
-        svg.append('      <g stroke="#131d31" stroke-width="0.8" stroke-dasharray="3,3">')
-        for c in range(1, COLS):
-            x = c * TILE
-            svg.append(f'        <line x1="{x}" y1="0" x2="{x}" y2="264"/>')
-        for r in range(1, ROWS):
-            y = r * TILE
-            svg.append(f'        <line x1="0" y1="{y}" x2="792" y2="{y}"/>')
-        svg.append('      </g>')
         
         for r in range(ROWS):
             for c in range(COLS):
@@ -1231,44 +1205,27 @@ def generate_procedural_paths_svg():
                 x = c * TILE
                 y = r * TILE
                 if val == 0:
-                    block_type = (c * 13 + r * 37) % 4
-                    if block_type == 0:
-                        svg.append(f'      <rect x="{x}" y="{y}" width="24" height="24" fill="url(#buildingGrad)" stroke="#334155" stroke-width="0.8" rx="2"/>')
-                        svg.append(f'      <rect x="{x+3}" y="{y+3}" width="18" height="18" fill="none" stroke="#1e293b" stroke-width="0.5"/>')
-                        svg.append(f'      <rect x="{x+5}" y="{y+5}" width="5" height="5" fill="#475569" rx="1"/>')
-                        svg.append(f'      <circle cx="{x+16}" cy="{y+8}" r="1" fill="#fef08a" opacity="0.8"/>')
-                    elif block_type == 1:
-                        svg.append(f'      <rect x="{x}" y="{y}" width="24" height="24" fill="url(#glassGrad)" stroke="#1d4ed8" stroke-width="0.6" rx="2"/>')
-                        svg.append(f'      <line x1="{x+2}" y1="{y+12}" x2="{x+22}" y2="{y+12}" stroke="#2563eb" stroke-width="0.5" opacity="0.6"/>')
-                        svg.append(f'      <circle cx="{x+12}" cy="{y+12}" r="2.5" fill="#0284c7" opacity="0.8"/>')
-                    elif block_type == 2:
-                        svg.append(f'      <rect x="{x}" y="{y}" width="24" height="24" fill="url(#parkGrad)" stroke="#166534" stroke-width="0.8" rx="2"/>')
-                        svg.append(f'      <circle cx="{x+8}" cy="{y+12}" r="4" fill="#15803d"/>')
-                        svg.append(f'      <circle cx="{x+16}" cy="{y+10}" r="3" fill="#22c55e"/>')
-                    else:
-                        svg.append(f'      <rect x="{x}" y="{y}" width="24" height="24" fill="url(#buildingGrad)" stroke="#475569" stroke-width="0.8" rx="2"/>')
-                        svg.append(f'      <rect x="{x+4}" y="{y+4}" width="6" height="6" fill="#f59e0b" opacity="0.75" rx="0.5"/>')
-                        svg.append(f'      <rect x="{x+14}" y="{y+14}" width="6" height="6" fill="#f59e0b" opacity="0.5" rx="0.5"/>')
+                    svg.append(f'      <rect x="{x}" y="{y}" width="24" height="24" fill="#0d1527" stroke="#1e293b" stroke-width="0.8" rx="3"/>')
+                    svg.append(f'      <rect x="{x+2}" y="{y+2}" width="20" height="20" fill="none" stroke="#152238" stroke-width="0.5" rx="2"/>')
                 elif val == 1:
                     if (c, r) in r_data["coins"]:
                         svg.append(f'      <circle id="dot-{idx}-{c}-{r}" cx="{x+12}" cy="{y+12}" r="2.5" fill="#f59e0b"/>')
                         
-        svg.append(f'      <g id="player-{idx}">')
-        svg.append('        <polygon points="6,-4 22,-9 22,9 6,4" fill="#fef08a" opacity="0.35"/>')
-        svg.append('        <rect x="-9" y="-6" width="18" height="12" rx="3" fill="#3b82f6" stroke="#1d4ed8" stroke-width="0.8"/>')
-        svg.append('        <rect x="-4" y="-4" width="8" height="8" rx="2" fill="#0f172a"/>')
-        svg.append('        <circle cx="0" cy="0" r="1.5" fill="#f59e0b"/>')
-        svg.append('        <circle cx="8" cy="-3.5" r="1.2" fill="#fef08a"/>')
-        svg.append('        <circle cx="8" cy="3.5" r="1.2" fill="#fef08a"/>')
-        svg.append('        <rect x="-9" y="-4.5" width="1.2" height="2" fill="#ef4444"/>')
-        svg.append('        <rect x="-9" y="2.5" width="1.2" height="2" fill="#ef4444"/>')
+        svg.append(f'      <g id="player-{idx}" filter="url(#botGlow)">')
+        svg.append('        <rect x="-9" y="-9" width="18" height="18" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.4"/>')
+        svg.append('        <circle cx="-5" cy="-5" r="1.2" fill="#38bdf8" opacity="0.8"/>')
+        svg.append('        <circle cx="5" cy="-5" r="1.2" fill="#38bdf8" opacity="0.8"/>')
+        svg.append('        <circle cx="-5" cy="5" r="1.2" fill="#38bdf8" opacity="0.8"/>')
+        svg.append('        <circle cx="5" cy="5" r="1.2" fill="#38bdf8" opacity="0.8"/>')
+        svg.append('        <circle cx="0" cy="0" r="3.5" fill="#38bdf8"/>')
+        svg.append('        <circle cx="0" cy="0" r="1.5" fill="#f0f9ff"/>')
         svg.append('      </g>')
         svg.append('    </g>')
         
     svg.append('  </g>')
     
     svg.append('  <rect x="19" y="48" width="792" height="264" fill="none" stroke="#1e293b" stroke-width="1.5" rx="4"/>')
-    svg.append('  <text x="415" y="331" text-anchor="middle" font-size="9" fill="#64748b" font-family="monospace">🏙️ Quarteirões Edificados • 🛣️ Malha Viária Procedural • 💡 Iluminação Urbana</text>')
+    svg.append('  <text x="415" y="331" text-anchor="middle" font-size="9" fill="#64748b" font-family="monospace">🏙️ Quarteirões Urbanos • 🧭 Algoritmo Conexo SCC • ⚡ Resolução em Tempo Real</text>')
     svg.append('</svg>')
     
     return "\n".join(svg)
@@ -1328,6 +1285,8 @@ def main():
     with open(f"{output}/caminhos_v1.svg", "w", encoding="utf-8") as f:
         f.write(procedural_svg)
     with open(f"{output}/caminhos_v2.svg", "w", encoding="utf-8") as f:
+        f.write(procedural_svg)
+    with open(f"{output}/caminhos_v3.svg", "w", encoding="utf-8") as f:
         f.write(procedural_svg)
         
     with open(f"{output}/index.html", "w", encoding="utf-8") as f:
