@@ -89,7 +89,7 @@
 > Um bot inteligente que percorre labirintos e caminhos procedurais em tempo real.
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/EvaniIdo/EvaniIdo/stats/caminhos_v1.svg" alt="Caminhos Procedurais — Autoplay Bot" width="100%" />
+  <img src="https://raw.githubusercontent.com/EvaniIdo/EvaniIdo/stats/caminhos_v2.svg" alt="Caminhos Procedurais — Autoplay Bot" width="100%" />
 </div>
 
 ---
